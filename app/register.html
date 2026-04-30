@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — Bibliotheca</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="auth-container">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">B</div>
+      <div class="auth-logo-text">BIBLIO<span>THECA</span></div>
+    </div>
+    <div class="auth-card">
+      <h1 class="auth-title">Daftar Akun</h1>
+      <p class="auth-sub">Buat akun baru sebagai anggota perpustakaan</p>
+
+      <div id="alert" style="display:none" class="alert alert-error"></div>
+      <div id="success" style="display:none" class="alert alert-success"></div>
+
+      <div class="form-group">
+        <label class="form-label">Nama Lengkap</label>
+        <input type="text" id="name" class="form-control" placeholder="Nama Anda" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-control" placeholder="nama@email.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Minimal 6 karakter" />
+      </div>
+
+      <button id="btnRegister" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:6px;">
+        Daftar
+      </button>
+
+      <div class="auth-divider">sudah punya akun?</div>
+      <p class="auth-link"><a href="login.html">Masuk di sini</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../services/app.js"></script>
+<script src="../services/authService.js"></script>
+<script>
+  if (App.isLoggedIn()) App.redirect('index.html');
+
+  document.getElementById('btnRegister').addEventListener('click', async () => {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const alertEl = document.getElementById('alert');
+    const successEl = document.getElementById('success');
+    const btn = document.getElementById('btnRegister');
+
+    alertEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!name || !email || !password) {
+      alertEl.textContent = 'Semua field wajib diisi.';
+      alertEl.style.display = 'flex';
+      return;
+    }
+
+    if (password.length < 6) {
+      alertEl.textContent = 'Password minimal 6 karakter.';
+      alertEl.style.display = 'flex';
+      return;
+    }
+
+    btn.textContent = 'Memproses...';
+    btn.disabled = true;
+
+    try {
+      await AuthService.register(name, email, password);
+      successEl.textContent = 'Registrasi berhasil! Mengarahkan ke halaman login...';
+      successEl.style.display = 'flex';
+      setTimeout(() => App.redirect('login.html'), 1800);
+    } catch (err) {
+      alertEl.textContent = err.message;
+      alertEl.style.display = 'flex';
+      btn.textContent = 'Daftar';
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Bibliotheca</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="nav-brand">
+    <div class="nav-brand-icon">B</div>
+    <span class="nav-brand-text">BIBLIO<span>THECA</span></span>
+  </a>
+  <div class="nav-links" id="navLinks"></div>
+  <div class="nav-user">
+    <div class="nav-user-info">
+      <div class="nav-user-name" id="navName">—</div>
+      <div class="nav-user-role" id="navRole">—</div>
+    </div>
+    <div class="nav-avatar" id="navAvatar">?</div>
+    <button class="btn btn-outline btn-sm" id="btnLogout">Keluar</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <div>
+      <div class="page-label">Dashboard</div>
+      <h1 class="page-title">Selamat Datang, <span id="heroName">—</span></h1>
+      <p class="page-subtitle">Ringkasan aktivitas perpustakaan Anda</p>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="loading"><div class="spinner"></div>Memuat data...</div>
+  </div>
+
+  <!-- RECENT LOANS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="accent-line"></span>
+        Peminjaman Terbaru
+      </span>
+      <a href="edit_product.html" class="btn btn-outline btn-sm" id="loanLink">Lihat Semua</a>
+    </div>
+    <div id="recentLoans">
+      <div class="loading"><div class="spinner"></div>Memuat...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav" id="mobileNav"></nav>
+
+<div id="toast" class="toast"></div>
+
+<script src="../services/app.js"></script>
+<script src="../services/authService.js"></script>
+<script src="../services/productServices.js"></script>
+<script>
+if (!App.isLoggedIn()) App.redirect('login.html');
+
+const user = App.getUser();
+const isAdmin = App.isAdmin();
+
+// Nav
+document.getElementById('navName').textContent = user?.name || 'User';
+document.getElementById('navRole').textContent = isAdmin ? 'Administrator' : 'Member';
+document.getElementById('navAvatar').textContent = (user?.name || 'U')[0].toUpperCase();
+document.getElementById('heroName').textContent = (user?.name || 'User').split(' ')[0];
+
+const navLinks = document.getElementById('navLinks');
+const mobileNav = document.getElementById('mobileNav');
+
+const links = [
+  { href: 'index.html', label: 'Dashboard', icon: '⊟', active: true },
+  { href: 'add.product.html', label: 'Katalog Buku', icon: '📚' },
+  { href: 'edit_product.html', label: 'Peminjaman', icon: '🔄' },
+];
+if (isAdmin) links.push({ href: 'edit_product.html?tab=admin', label: 'Kelola Buku', icon: '⚙️' });
+
+navLinks.innerHTML = links.map(l =>
+  `<a href="${l.href}" class="nav-link ${l.active ? 'active' : ''}">${l.label}</a>`
+).join('');
+
+mobileNav.innerHTML = `<div class="mobile-nav-links">${links.map(l =>
+  `<a href="${l.href}" class="mobile-nav-link ${l.active ? 'active' : ''}">${l.icon}<span>${l.label}</span></a>`
+).join('')}</div>`;
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  App.clearAuth();
+  App.redirect('login.html');
+});
+
+async function loadDashboard() {
+  try {
+    const [books, loans] = await Promise.all([
+      BookService.getAll(),
+      isAdmin ? LoanService.getAll() : LoanService.getMyLoans()
+    ]);
+
+    const bookList = books.data || books.books || books || [];
+    const loanList = loans.data || loans.loans || loans || [];
+
+    // Stats
+    const activeLoans = loanList.filter(l => l.status === 'borrowed' || l.status === 'active' || !l.returnDate);
+    const overdueLoans = loanList.filter(l => {
+      if (l.status === 'returned') return false;
+      const due = new Date(l.dueDate || l.due_date);
+      return due < new Date();
+    });
+    const totalFine = loanList.reduce((sum, l) => sum + (l.fine || l.fineAmount || 0), 0);
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Buku</div>
+        <div class="stat-value">${bookList.length}</div>
+        <div class="stat-sub">Tersedia di katalog</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-label">${isAdmin ? 'Total Peminjaman' : 'Peminjaman Saya'}</div>
+        <div class="stat-value">${loanList.length}</div>
+        <div class="stat-sub">Sepanjang waktu</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">Sedang Dipinjam</div>
+        <div class="stat-value">${activeLoans.length}</div>
+        <div class="stat-sub">Belum dikembalikan</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-label">Terlambat</div>
+        <div class="stat-value">${overdueLoans.length}</div>
+        <div class="stat-sub">Denda: Rp ${totalFine.toLocaleString('id-ID')}</div>
+      </div>
+    `;
+
+    // Recent loans table
+    const recent = loanList.slice(0, 6);
+    if (recent.length === 0) {
+      document.getElementById('recentLoans').innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📚</div>
+          <div class="empty-title">Belum Ada Peminjaman</div>
+          <div class="empty-text">Mulai pinjam buku dari katalog</div>
+        </div>`;
+      return;
+    }
+
+    document.getElementById('recentLoans').innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Buku</th>
+              ${isAdmin ? '<th>Peminjam</th>' : ''}
+              <th>Tanggal Pinjam</th>
+              <th>Jatuh Tempo</th>
+              <th>Status</th>
+              <th>Denda</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${recent.map(l => {
+              const isOverdue = !l.returnDate && new Date(l.dueDate || l.due_date) < new Date();
+              const status = l.returnDate ? 'returned' : (isOverdue ? 'overdue' : 'active');
+              const statusBadge = {
+                returned: '<span class="badge badge-green">Dikembalikan</span>',
+                overdue: '<span class="badge badge-red">Terlambat</span>',
+                active: '<span class="badge badge-blue">Dipinjam</span>'
+              }[status];
+              const fine = l.fine || l.fineAmount || 0;
+              return `<tr>
+                <td>${l.book?.title || l.bookTitle || '-'}</td>
+                ${isAdmin ? `<td>${l.user?.name || l.userName || '-'}</td>` : ''}
+                <td>${l.borrowDate ? new Date(l.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
+                <td>${l.dueDate || l.due_date ? new Date(l.dueDate || l.due_date).toLocaleDateString('id-ID') : '-'}</td>
+                <td>${statusBadge}</td>
+                <td>${fine > 0 ? `<span style="color:var(--danger)">Rp ${fine.toLocaleString('id-ID')}</span>` : '-'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (err) {
+    document.getElementById('statsGrid').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

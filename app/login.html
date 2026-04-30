@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Bibliotheca</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="auth-container">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">B</div>
+      <div class="auth-logo-text">BIBLIO<span>THECA</span></div>
+    </div>
+    <div class="auth-card">
+      <h1 class="auth-title">Masuk</h1>
+      <p class="auth-sub">Masukkan kredensial Anda untuk melanjutkan</p>
+
+      <div id="alert" style="display:none" class="alert alert-error"></div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-control" placeholder="nama@email.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button id="btnLogin" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:6px;">
+        Masuk
+      </button>
+
+      <div class="auth-divider">atau</div>
+      <p class="auth-link">Belum punya akun? <a href="register.html">Daftar sekarang</a></p>
+    </div>
+
+    <p style="text-align:center; font-size:11px; color:var(--text3); margin-top:20px; letter-spacing:0.06em;">
+      © 2024 BIBLIOTHECA — SISTEM PERPUSTAKAAN
+    </p>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="../services/app.js"></script>
+<script src="../services/authService.js"></script>
+<script>
+  if (App.isLoggedIn()) {
+    App.redirect('index.html');
+  }
+
+  document.getElementById('btnLogin').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const alert = document.getElementById('alert');
+    const btn = document.getElementById('btnLogin');
+
+    alert.style.display = 'none';
+
+    if (!email || !password) {
+      alert.textContent = 'Email dan password wajib diisi.';
+      alert.style.display = 'flex';
+      return;
+    }
+
+    btn.textContent = 'Memproses...';
+    btn.disabled = true;
+
+    try {
+      const data = await AuthService.login(email, password);
+      App.setAuth(data.token, data.user);
+      App.redirect('index.html');
+    } catch (err) {
+      alert.textContent = err.message;
+      alert.style.display = 'flex';
+      btn.textContent = 'Masuk';
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnLogin').click();
+  });
+</script>
+</body>
+</html>
