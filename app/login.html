@@ -69,9 +69,19 @@
     btn.disabled = true;
 
     try {
-      const data = await AuthService.login(email, password);
-      App.setAuth(data.token, data.user);
+      const response = await AuthService.login(email, password);
+      
+      // ✅ Perbaikan: ambil dari response.data
+      const token = response.data.accessToken;
+      const user = response.data.user;
+      
+      if (!token) {
+        throw new Error('Token tidak ditemukan dalam response server');
+      }
+      
+      App.setAuth(token, user);
       App.redirect('index.html');
+      
     } catch (err) {
       alert.textContent = err.message;
       alert.style.display = 'flex';

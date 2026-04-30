@@ -1,24 +1,25 @@
 const BookService = {
   async getAll(params = {}) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${App.BASE_URL}/api/books${query ? '?' + query : ''}`);
+    const res = await fetch(`${App.BASE_URL}/api/books${query ? '?' + query : '?limit=100'}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil buku');
-    return data;
+    // Handle response structure { success, data }
+    return data.data || data;
   },
 
   async getById(id) {
     const res = await fetch(`${App.BASE_URL}/api/books/${id}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Buku tidak ditemukan');
-    return data;
+    return data.data || data;
   },
 
   async getCategories() {
     const res = await fetch(`${App.BASE_URL}/api/books/categories`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil kategori');
-    return data;
+    return data.data || data;
   },
 
   async create(bookData) {
@@ -29,7 +30,7 @@ const BookService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal menambah buku');
-    return data;
+    return data.data || data;
   },
 
   async update(id, bookData) {
@@ -40,7 +41,7 @@ const BookService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengupdate buku');
-    return data;
+    return data.data || data;
   },
 
   async delete(id) {
@@ -56,11 +57,53 @@ const BookService = {
 
 const LoanService = {
   async getAll() {
-    const res = await App.fetch(`${App.BASE_URL}/api/loans`);
+    const res = await App.fetch(`${App.BASE_URL}/api/loans?limit=100`);
     if (!res) return [];
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil data peminjaman');
-    return data;
+    // Extract data dari response { success, data }
+    const loans = data.data || data.loans || data || [];
+    return { data: Array.isArray(loans) ? loans : [] };
+  },
+
+  async getMyLoans() {
+    try {
+      const currentUser = App.getUser();
+      if (!currentUser?._id) {
+        console.warn('User tidak ditemukan');
+        return { data: [] };
+      }
+      
+      // Coba endpoint dengan query parameter
+      const res = await App.fetch(`${App.BASE_URL}/api/loans?limit=100`);
+      if (!res) return { data: [] };
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gagal mengambil data peminjaman');
+      
+      // Extract data dari response
+      let allLoans = [];
+      if (data.data && Array.isArray(data.data)) {
+        allLoans = data.data;
+      } else if (Array.isArray(data)) {
+        allLoans = data;
+      } else if (data.loans && Array.isArray(data.loans)) {
+        allLoans = data.loans;
+      } else {
+        allLoans = [];
+      }
+      
+      // Filter berdasarkan user yang login
+      const myLoans = allLoans.filter(loan => {
+        const loanUserId = loan.user?._id || loan.userId || loan.user;
+        return loanUserId === currentUser._id;
+      });
+      
+      return { data: myLoans };
+    } catch (err) {
+      console.error('Error in getMyLoans:', err);
+      return { data: [] };
+    }
   },
 
   async getHistory() {
@@ -68,7 +111,7 @@ const LoanService = {
     if (!res) return [];
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil riwayat');
-    return data;
+    return data.data || data;
   },
 
   async getOverdue() {
@@ -76,7 +119,7 @@ const LoanService = {
     if (!res) return [];
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil data terlambat');
-    return data;
+    return data.data || data;
   },
 
   async borrow(bookId) {
@@ -87,7 +130,7 @@ const LoanService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal meminjam buku');
-    return data;
+    return data.data || data;
   },
 
   async returnBook(loanId) {
@@ -97,7 +140,7 @@ const LoanService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengembalikan buku');
-    return data;
+    return data.data || data;
   },
 
   async getById(loanId) {
@@ -105,7 +148,7 @@ const LoanService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil detail peminjaman');
-    return data;
+    return data.data || data;
   }
 };
 
@@ -115,7 +158,7 @@ const FineService = {
     if (!res) return [];
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil data denda');
-    return data;
+    return data.data || data;
   },
 
   async getStats() {
@@ -123,7 +166,7 @@ const FineService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil statistik denda');
-    return data;
+    return data.data || data;
   },
 
   async pay(fineId) {
@@ -133,7 +176,7 @@ const FineService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal membayar denda');
-    return data;
+    return data.data || data;
   }
 };
 
@@ -143,7 +186,7 @@ const MemberService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil dashboard');
-    return data;
+    return data.data || data;
   },
 
   async getAll() {
@@ -151,7 +194,7 @@ const MemberService = {
     if (!res) return [];
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil data anggota');
-    return data;
+    return data.data || data;
   }
 };
 

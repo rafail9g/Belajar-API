@@ -51,7 +51,10 @@ const App = {
 
     if (res.status === 401) {
       App.clearAuth();
-      window.location.href = 'login.html';
+      // Jangan redirect jika sedang login
+      if (!window.location.href.includes('login.html')) {
+        window.location.href = 'login.html';
+      }
       return null;
     }
 

@@ -32,17 +32,18 @@
       <h1 class="page-title">Katalog Buku</h1>
       <p class="page-subtitle">Temukan dan pinjam buku favoritmu</p>
     </div>
-    <div id="adminActions" style="display:none; gap:10px; display:none; align-items:center;">
-      <button class="btn btn-primary" id="btnAddBook">
-        + Tambah Buku
-      </button>
+    <div id="adminActions" style="display:none;">
+      <button class="btn btn-primary" id="btnAddBook">+ Tambah Buku</button>
     </div>
   </div>
 
   <!-- SEARCH -->
   <div class="search-bar">
     <div class="search-input-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
       <input type="text" id="searchInput" class="form-control" placeholder="Cari judul atau penulis..." />
     </div>
     <select id="filterCategory" class="form-control" style="max-width:180px;">
@@ -59,7 +60,7 @@
 <!-- MOBILE NAV -->
 <nav class="mobile-nav" id="mobileNav"></nav>
 
-<!-- MODAL TAMBAH/EDIT BUKU (ADMIN) -->
+<!-- MODAL TAMBAH/EDIT BUKU -->
 <div class="modal-overlay" id="bookModal">
   <div class="modal">
     <div class="modal-header">
@@ -67,11 +68,11 @@
       <button class="modal-close" id="modalClose">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Judul Buku</label>
+      <label class="form-label">Judul Buku *</label>
       <input type="text" id="fTitle" class="form-control" placeholder="Judul buku" />
     </div>
     <div class="form-group">
-      <label class="form-label">Penulis</label>
+      <label class="form-label">Penulis *</label>
       <input type="text" id="fAuthor" class="form-control" placeholder="Nama penulis" />
     </div>
     <div class="form-row">
@@ -81,13 +82,13 @@
       </div>
       <div class="form-group">
         <label class="form-label">Stok</label>
-        <input type="number" id="fStock" class="form-control" placeholder="Jumlah" min="0" />
+        <input type="number" id="fStock" class="form-control" placeholder="Jumlah" min="0" value="1" />
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">ISBN</label>
-        <input type="text" id="fIsbn" class="form-control" placeholder="ISBN (opsional)" />
+        <input type="text" id="fIsbn" class="form-control" placeholder="ISBN" />
       </div>
       <div class="form-group">
         <label class="form-label">Tahun Terbit</label>
@@ -96,11 +97,11 @@
     </div>
     <div class="form-group">
       <label class="form-label">Deskripsi</label>
-      <textarea id="fDesc" class="form-control" placeholder="Deskripsi singkat buku..."></textarea>
+      <textarea id="fDesc" class="form-control" placeholder="Deskripsi buku..." rows="3"></textarea>
     </div>
     <div class="form-group">
-      <label class="form-label">URL Cover (opsional)</label>
-      <input type="text" id="fCover" class="form-control" placeholder="https://..." />
+      <label class="form-label">URL Cover</label>
+      <input type="text" id="fCover" class="form-control" placeholder="https://placehold.co/400x600" />
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="modalCancel">Batal</button>
@@ -116,7 +117,7 @@
       <span class="modal-title">Hapus Buku</span>
       <button class="modal-close" id="deleteClose">✕</button>
     </div>
-    <p style="color:var(--text2); font-size:14px;">Yakin ingin menghapus buku <strong id="deleteBookName" style="color:var(--text)"></strong>? Tindakan ini tidak dapat dibatalkan.</p>
+    <p>Yakin ingin menghapus buku <strong id="deleteBookName"></strong>?</p>
     <div class="modal-footer">
       <button class="btn btn-outline" id="deleteCancelBtn">Batal</button>
       <button class="btn btn-danger" id="deleteConfirmBtn">Hapus</button>
@@ -132,12 +133,12 @@
       <button class="modal-close" id="borrowClose">✕</button>
     </div>
     <div style="margin-bottom:20px;">
-      <p style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:var(--text);" id="borrowBookTitle">—</p>
-      <p style="font-size:13px; color:var(--text2); margin-top:4px;" id="borrowBookAuthor">—</p>
+      <p style="font-size:20px; font-weight:700;" id="borrowBookTitle">—</p>
+      <p style="font-size:13px; color:var(--text2);" id="borrowBookAuthor">—</p>
     </div>
-    <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:14px; font-size:13px; color:var(--text2);">
-      <p>📅 <strong>Masa peminjaman:</strong> 7 hari</p>
-      <p style="margin-top:6px;">⚠️ <strong>Denda keterlambatan:</strong> Rp 1.000/hari</p>
+    <div style="background:var(--bg3); padding:14px; border-radius:var(--radius);">
+      <p>📅 Masa peminjaman: 7 hari</p>
+      <p>⚠️ Denda: Rp 1.000/hari</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="borrowCancelBtn">Batal</button>
@@ -151,38 +152,51 @@
 <script src="../services/app.js"></script>
 <script src="../services/authService.js"></script>
 <script src="../services/productServices.js"></script>
-<script>
-if (!App.isLoggedIn()) App.redirect('login.html');
 
+<script>
+// ==================== CEK LOGIN ====================
+if (!App.isLoggedIn()) {
+  App.redirect('login.html');
+}
+
+// ==================== DATA USER ====================
 const user = App.getUser();
 const isAdmin = App.isAdmin();
 
+// Update navbar
 document.getElementById('navName').textContent = user?.name || 'User';
-document.getElementById('navRole').textContent = isAdmin ? 'Administrator' : 'Member';
+document.getElementById('navRole').textContent = isAdmin ? 'Admin' : 'Member';
 document.getElementById('navAvatar').textContent = (user?.name || 'U')[0].toUpperCase();
 
+// ==================== NAVIGASI ====================
 const navLinks = document.getElementById('navLinks');
 const mobileNav = document.getElementById('mobileNav');
-const links = [
+const menuItems = [
   { href: 'index.html', label: 'Dashboard', icon: '⊟' },
-  { href: 'add.product.html', label: 'Katalog Buku', icon: '📚', active: true },
+  { href: 'add.product.html', label: 'Katalog', icon: '📚', active: true },
   { href: 'edit_product.html', label: 'Peminjaman', icon: '🔄' },
 ];
-navLinks.innerHTML = links.map(l =>
-  `<a href="${l.href}" class="nav-link ${l.active ? 'active' : ''}">${l.label}</a>`
+
+navLinks.innerHTML = menuItems.map(m => 
+  `<a href="${m.href}" class="nav-link ${m.active ? 'active' : ''}">${m.label}</a>`
 ).join('');
-mobileNav.innerHTML = `<div class="mobile-nav-links">${links.map(l =>
-  `<a href="${l.href}" class="mobile-nav-link ${l.active ? 'active' : ''}">${l.icon}<span>${l.label}</span></a>`
+
+mobileNav.innerHTML = `<div class="mobile-nav-links">${menuItems.map(m => 
+  `<a href="${m.href}" class="mobile-nav-link ${m.active ? 'active' : ''}">${m.icon}<span>${m.label}</span></a>`
 ).join('')}</div>`;
 
-document.getElementById('btnLogout').addEventListener('click', () => {
-  App.clearAuth(); App.redirect('login.html');
-});
+// Logout
+document.getElementById('btnLogout').onclick = () => {
+  App.clearAuth();
+  App.redirect('login.html');
+};
 
+// Tampilkan tombol tambah buku untuk admin
 if (isAdmin) {
   document.getElementById('adminActions').style.display = 'flex';
 }
 
+// ==================== VARIABEL GLOBAL ====================
 let allBooks = [];
 let editingId = null;
 let deletingId = null;
@@ -191,97 +205,131 @@ let borrowingId = null;
 const bookIcons = ['📘', '📗', '📕', '📙', '📓', '📔'];
 const randomIcon = (id) => bookIcons[id % bookIcons.length];
 
+// ==================== LOAD BUKU ====================
 async function loadBooks() {
   try {
-    const data = await BookService.getAll();
-    allBooks = data.data || data.books || data || [];
-
-    // Fill categories
-    const cats = [...new Set(allBooks.map(b => b.category || b.genre).filter(Boolean))];
-    const sel = document.getElementById('filterCategory');
-    cats.forEach(c => {
+    const result = await BookService.getAll();
+    
+    // Ambil array buku dari response
+    let books = [];
+    if (Array.isArray(result)) {
+      books = result;
+    } else if (result?.data && Array.isArray(result.data)) {
+      books = result.data;
+    } else if (result?.books && Array.isArray(result.books)) {
+      books = result.books;
+    }
+    
+    allBooks = books;
+    console.log('✅ Buku dimuat:', allBooks.length);
+    
+    // Isi dropdown kategori
+    const categories = [...new Set(allBooks.map(b => b.category).filter(Boolean))];
+    const catSelect = document.getElementById('filterCategory');
+    catSelect.innerHTML = '<option value="">Semua Kategori</option>';
+    categories.forEach(cat => {
       const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      sel.appendChild(opt);
+      opt.value = cat;
+      opt.textContent = cat;
+      catSelect.appendChild(opt);
     });
-
+    
     renderBooks(allBooks);
   } catch (err) {
-    document.getElementById('booksContainer').innerHTML =
-      `<div class="alert alert-error">${err.message}</div>`;
+    console.error('❌ Load buku error:', err);
+    document.getElementById('booksContainer').innerHTML = 
+      `<div class="alert alert-error">Gagal memuat buku: ${err.message}</div>`;
   }
 }
 
+// ==================== RENDER BUKU ====================
 function renderBooks(books) {
-  if (books.length === 0) {
-    document.getElementById('booksContainer').innerHTML = `
+  const container = document.getElementById('booksContainer');
+  
+  if (!books || books.length === 0) {
+    container.innerHTML = `
       <div class="empty">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">Buku Tidak Ditemukan</div>
-        <div class="empty-text">Coba kata kunci lain</div>
+        <div class="empty-icon">📚</div>
+        <div class="empty-title">Tidak ada buku</div>
       </div>`;
     return;
   }
-
-  document.getElementById('booksContainer').innerHTML = `
+  
+  container.innerHTML = `
     <div class="books-grid">
-      ${books.map((b, i) => {
-        const stock = b.stock ?? b.quantity ?? 0;
-        const stockBadge = stock > 0
-          ? `<span class="badge badge-green">Tersedia</span>`
-          : `<span class="badge badge-red">Habis</span>`;
+      ${books.map((book, idx) => {
+        const bookId = book._id || book.id;
+        const title = (book.title || 'Tanpa Judul').replace(/'/g, "\\'");
+        const author = (book.author || '-').replace(/'/g, "\\'");
+        const stock = book.stock ?? book.totalCopies ?? 0;
+        const cover = book.cover || book.coverUrl;
+        const category = book.category || '-';
+        
         return `
           <div class="book-card">
             <div class="book-cover">
-              ${b.cover || b.coverUrl
-                ? `<img src="${b.cover || b.coverUrl}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" onerror="this.style.display='none'" />`
-                : `<span style="font-size:52px;">${randomIcon(i)}</span>`}
+              ${cover ? 
+                `<img src="${cover}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'font-size:52px;\\'>${randomIcon(idx)}</span>'">` :
+                `<span style="font-size:52px;">${randomIcon(idx)}</span>`
+              }
             </div>
             <div class="book-info">
-              <div class="book-title">${b.title}</div>
-              <div class="book-author">${b.author || '—'}</div>
+              <div class="book-title">${book.title}</div>
+              <div class="book-author">${book.author || '-'}</div>
               <div class="book-meta">
-                <span class="book-stock">Stok: ${stock}</span>
-                ${stockBadge}
+                <span>${category}</span>
+                <span class="${stock > 0 ? 'badge badge-green' : 'badge badge-red'}">Stok: ${stock}</span>
               </div>
             </div>
-            <div class="book-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
-              ${!isAdmin ? `
-                <button class="btn btn-primary btn-sm" style="flex:1;" ${stock < 1 ? 'disabled' : ''}
-                  onclick="openBorrow('${b._id || b.id}', '${b.title}', '${b.author || ''}')">
-                  ${stock > 0 ? 'Pinjam' : 'Stok Habis'}
-                </button>` : `
-                <button class="btn btn-outline btn-sm" style="flex:1;" onclick="openEdit(${JSON.stringify(b).replace(/"/g, '&quot;')})">Edit</button>
-                <button class="btn btn-danger btn-sm" style="flex:1;" onclick="openDelete('${b._id || b.id}', '${b.title}')">Hapus</button>
+            <div class="book-actions">
+              ${isAdmin ? `
+                <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(book)})'>Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="openDelete('${bookId}', '${title}')">Hapus</button>
+              ` : `
+                <button class="btn btn-primary btn-sm" ${stock < 1 ? 'disabled' : ''} 
+                  onclick="openBorrow('${bookId}', '${title}', '${author}')">
+                  ${stock > 0 ? 'Pinjam' : 'Habis'}
+                </button>
               `}
             </div>
-          </div>`;
+          </div>
+        `;
       }).join('')}
-    </div>`;
+    </div>
+  `;
 }
 
-// Search & filter
-document.getElementById('searchInput').addEventListener('input', filterBooks);
-document.getElementById('filterCategory').addEventListener('change', filterBooks);
-
+// ==================== FILTER ====================
 function filterBooks() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  const cat = document.getElementById('filterCategory').value;
-  const filtered = allBooks.filter(b => {
-    const matchQ = !q || b.title.toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q);
-    const matchCat = !cat || b.category === cat || b.genre === cat;
-    return matchQ && matchCat;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const category = document.getElementById('filterCategory').value;
+  
+  const filtered = allBooks.filter(book => {
+    const matchSearch = !search || 
+      (book.title || '').toLowerCase().includes(search) ||
+      (book.author || '').toLowerCase().includes(search);
+    const matchCategory = !category || book.category === category;
+    return matchSearch && matchCategory;
   });
+  
   renderBooks(filtered);
 }
 
-// === MODAL TAMBAH/EDIT ===
+document.getElementById('searchInput').addEventListener('input', filterBooks);
+document.getElementById('filterCategory').addEventListener('change', filterBooks);
+
+// ==================== MODAL TAMBAH/EDIT ====================
 function openAdd() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Tambah Buku';
-  ['fTitle','fAuthor','fCategory','fIsbn','fDesc','fCover'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('fStock').value = '';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fAuthor').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fStock').value = '1';
+  document.getElementById('fIsbn').value = '';
   document.getElementById('fYear').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fCover').value = '';
   document.getElementById('bookModal').classList.add('open');
 }
 
@@ -290,114 +338,138 @@ function openEdit(book) {
   document.getElementById('modalTitle').textContent = 'Edit Buku';
   document.getElementById('fTitle').value = book.title || '';
   document.getElementById('fAuthor').value = book.author || '';
-  document.getElementById('fCategory').value = book.category || book.genre || '';
-  document.getElementById('fStock').value = book.stock ?? book.quantity ?? '';
+  document.getElementById('fCategory').value = book.category || '';
+  document.getElementById('fStock').value = book.stock ?? 1;
   document.getElementById('fIsbn').value = book.isbn || '';
-  document.getElementById('fYear').value = book.publishedYear || book.year || '';
+  document.getElementById('fYear').value = book.publishedYear || '';
   document.getElementById('fDesc').value = book.description || '';
-  document.getElementById('fCover').value = book.cover || book.coverUrl || '';
+  document.getElementById('fCover').value = book.cover || '';
   document.getElementById('bookModal').classList.add('open');
 }
 
-function closeBookModal() { document.getElementById('bookModal').classList.remove('open'); }
-document.getElementById('modalClose').addEventListener('click', closeBookModal);
-document.getElementById('modalCancel').addEventListener('click', closeBookModal);
-document.getElementById('btnAddBook').addEventListener('click', openAdd);
+function closeBookModal() {
+  document.getElementById('bookModal').classList.remove('open');
+}
 
-document.getElementById('modalSave').addEventListener('click', async () => {
-  const payload = {
-    title: document.getElementById('fTitle').value.trim(),
-    author: document.getElementById('fAuthor').value.trim(),
-    category: document.getElementById('fCategory').value.trim(),
-    stock: parseInt(document.getElementById('fStock').value) || 0,
-    isbn: document.getElementById('fIsbn').value.trim(),
-    publishedYear: parseInt(document.getElementById('fYear').value) || undefined,
-    description: document.getElementById('fDesc').value.trim(),
-    cover: document.getElementById('fCover').value.trim(),
-  };
+document.getElementById('modalClose').onclick = closeBookModal;
+document.getElementById('modalCancel').onclick = closeBookModal;
+document.getElementById('btnAddBook').onclick = openAdd;
 
-  if (!payload.title || !payload.author) {
-    App.showToast('Judul dan penulis wajib diisi.', 'error');
+// SIMPAN BUKU
+document.getElementById('modalSave').onclick = async () => {
+  const title = document.getElementById('fTitle').value.trim();
+  const author = document.getElementById('fAuthor').value.trim();
+  
+  if (!title || !author) {
+    App.showToast('Judul dan penulis wajib diisi!', 'error');
     return;
   }
-
+  
+  const payload = {
+    title: title,
+    author: author,
+    category: document.getElementById('fCategory').value.trim() || 'Umum',
+    stock: parseInt(document.getElementById('fStock').value) || 1,
+    isbn: document.getElementById('fIsbn').value.trim(),
+    publishedYear: parseInt(document.getElementById('fYear').value) || null,
+    description: document.getElementById('fDesc').value.trim(),
+    cover: document.getElementById('fCover').value.trim() || ''
+  };
+  
   const btn = document.getElementById('modalSave');
-  btn.disabled = true; btn.textContent = 'Menyimpan...';
-
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+  
   try {
     if (editingId) {
       await BookService.update(editingId, payload);
-      App.showToast('Buku berhasil diperbarui!', 'success');
+      App.showToast('Buku berhasil diupdate!', 'success');
     } else {
       await BookService.create(payload);
       App.showToast('Buku berhasil ditambahkan!', 'success');
     }
     closeBookModal();
-    loadBooks();
+    await loadBooks();
   } catch (err) {
-    App.showToast(err.message, 'error');
+    console.error(err);
+    App.showToast(err.message || 'Gagal menyimpan buku', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Simpan';
+    btn.disabled = false;
+    btn.textContent = 'Simpan';
   }
-});
+};
 
-// === MODAL DELETE ===
+// ==================== MODAL HAPUS ====================
 function openDelete(id, title) {
   deletingId = id;
   document.getElementById('deleteBookName').textContent = title;
   document.getElementById('deleteModal').classList.add('open');
 }
 
-function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); }
-document.getElementById('deleteClose').addEventListener('click', closeDeleteModal);
-document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+}
 
-document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+document.getElementById('deleteClose').onclick = closeDeleteModal;
+document.getElementById('deleteCancelBtn').onclick = closeDeleteModal;
+
+document.getElementById('deleteConfirmBtn').onclick = async () => {
   const btn = document.getElementById('deleteConfirmBtn');
-  btn.disabled = true; btn.textContent = 'Menghapus...';
+  btn.disabled = true;
+  btn.textContent = 'Menghapus...';
+  
   try {
     await BookService.delete(deletingId);
-    App.showToast('Buku berhasil dihapus.', 'success');
+    App.showToast('Buku berhasil dihapus!', 'success');
     closeDeleteModal();
-    loadBooks();
+    await loadBooks();
   } catch (err) {
-    App.showToast(err.message, 'error');
+    App.showToast(err.message || 'Gagal menghapus buku', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Hapus';
+    btn.disabled = false;
+    btn.textContent = 'Hapus';
   }
-});
+};
 
-// === MODAL PINJAM ===
+// ==================== MODAL PINJAM ====================
 function openBorrow(id, title, author) {
   borrowingId = id;
   document.getElementById('borrowBookTitle').textContent = title;
-  document.getElementById('borrowBookAuthor').textContent = author || '—';
+  document.getElementById('borrowBookAuthor').textContent = author;
   document.getElementById('borrowModal').classList.add('open');
 }
 
-function closeBorrowModal() { document.getElementById('borrowModal').classList.remove('open'); }
-document.getElementById('borrowClose').addEventListener('click', closeBorrowModal);
-document.getElementById('borrowCancelBtn').addEventListener('click', closeBorrowModal);
+function closeBorrowModal() {
+  document.getElementById('borrowModal').classList.remove('open');
+}
 
-document.getElementById('borrowConfirmBtn').addEventListener('click', async () => {
+document.getElementById('borrowClose').onclick = closeBorrowModal;
+document.getElementById('borrowCancelBtn').onclick = closeBorrowModal;
+
+document.getElementById('borrowConfirmBtn').onclick = async () => {
   const btn = document.getElementById('borrowConfirmBtn');
-  btn.disabled = true; btn.textContent = 'Memproses...';
+  btn.disabled = true;
+  btn.textContent = 'Memproses...';
+  
   try {
     await LoanService.borrow(borrowingId);
     App.showToast('Buku berhasil dipinjam!', 'success');
     closeBorrowModal();
-    loadBooks();
+    await loadBooks();
   } catch (err) {
-    App.showToast(err.message, 'error');
+    App.showToast(err.message || 'Gagal meminjam buku', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Pinjam Sekarang';
+    btn.disabled = false;
+    btn.textContent = 'Pinjam Sekarang';
   }
-});
+};
 
+// ==================== EXPOSE GLOBAL ====================
 window.openEdit = openEdit;
 window.openDelete = openDelete;
 window.openBorrow = openBorrow;
 
+// ==================== START ====================
 loadBooks();
 </script>
 </body>

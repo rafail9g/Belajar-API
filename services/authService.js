@@ -18,7 +18,7 @@ const AuthService = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login gagal');
-    return data;
+    return data;  // ← ini mengembalikan { success, data }
   },
 
   async getProfile() {
