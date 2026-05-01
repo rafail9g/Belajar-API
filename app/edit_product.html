@@ -32,11 +32,14 @@
       <h1 class="page-title" id="pageTitle">Peminjaman Saya</h1>
       <p class="page-subtitle" id="pageSubtitle">Riwayat dan status peminjaman buku Anda</p>
     </div>
-    
+    <!-- Admin: tombol monitor denda -->
+    <div id="adminDendaBtn" style="display:none;">
+      <button class="btn btn-outline" id="btnShowFines">🧾 Monitor Denda</button>
+    </div>
   </div>
 
-  <!-- FINE SUMMARY -->
-  <div id="fineSummary" style="display:none;"></div>
+  <!-- MEMBER: warning denda aktif -->
+  <div id="memberFineAlert" style="display:none;"></div>
 
   <!-- FILTER -->
   <div class="search-bar" style="margin-bottom:16px;">
@@ -59,12 +62,25 @@
       <div class="loading"><div class="spinner"></div>Memuat data...</div>
     </div>
   </div>
+
+  <!-- MEMBER ONLY: section daftar denda yang harus dibayar -->
+  <div id="memberFinesSection" style="display:none; margin-top:28px;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><span class="accent-line"></span>Denda Saya</span>
+        <span style="font-size:12px;color:var(--text3);">Bayar denda agar bisa meminjam lagi</span>
+      </div>
+      <div id="memberFinesList">
+        <div class="loading"><div class="spinner"></div>Memuat denda...</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MOBILE NAV -->
 <nav class="mobile-nav" id="mobileNav"></nav>
 
-<!-- MODAL DETAIL -->
+<!-- ======================== MODAL DETAIL PEMINJAMAN ======================== -->
 <div class="modal-overlay" id="detailModal">
   <div class="modal">
     <div class="modal-header">
@@ -75,6 +91,114 @@
     <div class="modal-footer">
       <button class="btn btn-outline" id="detailCloseBtn">Tutup</button>
       <button class="btn btn-success" id="detailReturnBtn" style="display:none;">Kembalikan Buku</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MODAL KONFIRMASI PENGEMBALIAN ======================== -->
+<div class="modal-overlay" id="returnModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Konfirmasi Pengembalian</span>
+      <button class="modal-close" id="returnClose">✕</button>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="width:56px;height:56px;background:var(--success-dim);border:1px solid rgba(75,200,122,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;">📦</div>
+      <p style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;">Kembalikan buku ini?</p>
+      <p style="font-size:14px;color:var(--text2);">Judul: <strong id="returnBookTitle" style="color:var(--text);">—</strong></p>
+      <p style="font-size:14px;color:var(--text2);" id="returnMemberRow">Peminjam: <strong id="returnMemberName" style="color:var(--text);">—</strong></p>
+    </div>
+    <div id="returnFineWarning" style="display:none;background:var(--danger-dim);border:1px solid rgba(200,75,75,0.2);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;">⚠ Buku Terlambat</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--danger);" id="returnFineAmount">Rp 0</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;">Denda dihitung otomatis setelah pengembalian</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="returnCancelBtn">Batal</button>
+      <button class="btn btn-success" id="returnConfirmBtn">✓ Ya, Kembalikan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MODAL BAYAR DENDA (MEMBER) ======================== -->
+<div class="modal-overlay" id="payFineModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title">Bayar Denda</span>
+      <button class="modal-close" id="payFineClose">✕</button>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px;" id="payFineCode">—</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;color:var(--danger);" id="payFineAmount">Rp 0</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;" id="payFineInfo">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Metode Pembayaran</label>
+      <select id="payFineMethod" class="form-control">
+        <option value="tunai">Tunai</option>
+        <option value="transfer">Transfer Bank</option>
+        <option value="qris">QRIS</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catatan (opsional)</label>
+      <input type="text" id="payFineNotes" class="form-control" placeholder="Catatan pembayaran..." />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="payFineCancelBtn">Batal</button>
+      <button class="btn btn-primary" id="payFineConfirmBtn">✓ Konfirmasi Bayar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== MODAL MONITOR DENDA (ADMIN) ======================== -->
+<div class="modal-overlay" id="adminFinesModal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title">Monitor Denda</span>
+      <button class="modal-close" id="adminFinesClose">✕</button>
+    </div>
+
+    <!-- Stats strip -->
+    <div id="adminFineStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;"></div>
+
+    <!-- Tab -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;">
+      <button class="btn btn-sm" id="tabUnpaid" onclick="switchAdminTab('unpaid')" style="background:var(--accent);color:var(--bg);">Belum Dibayar</button>
+      <button class="btn btn-outline btn-sm" id="tabPaid" onclick="switchAdminTab('paid')">Sudah Dibayar</button>
+      <button class="btn btn-outline btn-sm" id="tabManual" onclick="switchAdminTab('manual')">+ Denda Manual</button>
+    </div>
+
+    <div id="adminFineTabUnpaid">
+      <div id="adminFineListUnpaid"><div class="loading"><div class="spinner"></div>Memuat...</div></div>
+    </div>
+    <div id="adminFineTabPaid" style="display:none;">
+      <div id="adminFineListPaid"><div class="loading"><div class="spinner"></div>Memuat...</div></div>
+    </div>
+    <div id="adminFineTabManual" style="display:none;">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Buat denda manual untuk kerusakan atau kehilangan buku (di luar sistem otomatis).</p>
+      <div class="form-group">
+        <label class="form-label">ID Peminjaman (Loan ID)</label>
+        <input type="text" id="manualLoanId" class="form-control" placeholder="ID peminjaman..." />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Jumlah Denda (Rp)</label>
+          <input type="number" id="manualAmount" class="form-control" placeholder="50000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alasan</label>
+          <select id="manualReason" class="form-control">
+            <option value="kerusakan">Kerusakan</option>
+            <option value="kehilangan">Kehilangan</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catatan</label>
+        <textarea id="manualNotes" class="form-control" rows="2" placeholder="Contoh: Halaman 10-15 robek..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="btnSubmitManualFine">Buat Denda</button>
     </div>
   </div>
 </div>
@@ -108,69 +232,47 @@ mobileNav.innerHTML = `<div class="mobile-nav-links">${links.map(l =>
   `<a href="${l.href}" class="mobile-nav-link ${l.active ? 'active' : ''}">${l.icon}<span>${l.label}</span></a>`
 ).join('')}</div>`;
 
-document.getElementById('btnLogout').addEventListener('click', () => {
-  App.clearAuth(); App.redirect('login.html');
-});
+document.getElementById('btnLogout').addEventListener('click', () => { App.clearAuth(); App.redirect('login.html'); });
 
-// Admin: tampil riwayat semua peminjaman. User: peminjaman sendiri.
 if (isAdmin) {
   document.getElementById('pageTitle').textContent = 'Riwayat Peminjaman';
   document.getElementById('pageSubtitle').textContent = 'Seluruh riwayat peminjaman anggota perpustakaan';
+  document.getElementById('adminDendaBtn').style.display = 'flex';
+  document.getElementById('returnMemberRow').style.display = 'block';
+} else {
+  // Member: tampilkan section denda
+  document.getElementById('memberFinesSection').style.display = 'block';
+  document.getElementById('returnMemberRow').style.display = 'none';
 }
 
 let allLoans = [];
 let returningId = null;
+let returningLoan = null;
+let payingFineId = null;
+let currentAdminTab = 'unpaid';
 
-// ==================== HELPERS STATUS API ====================
-// API status: borrowed | returned | overdue | lost
+// ==================== HELPERS ====================
 function getLoanStatus(loan) {
-  // Gunakan status dari API langsung
   if (loan.status) return loan.status;
-  // Fallback: hitung manual
   if (loan.returnDate) return 'returned';
-  const due = new Date(loan.dueDate);
-  return due < new Date() ? 'overdue' : 'borrowed';
+  return new Date(loan.dueDate) < new Date() ? 'overdue' : 'borrowed';
 }
-
-function getFineAmount(loan) {
-  // API field: fineAmount
-  return loan.fineAmount || loan.fine || 0;
-}
-
-function getLoanTitle(loan) {
-  // API: loan.book bisa berupa string (ID) atau object
-  return loan.book?.title || loan.bookTitle || '-';
-}
-
-function getLoanAuthor(loan) {
-  return loan.book?.author || loan.bookAuthor || '';
-}
-
-function getMemberName(loan) {
-  return loan.member?.name || loan.memberName || loan.user?.name || '-';
-}
-
-// API field: loanDate (bukan borrowDate)
-function getLoanDate(loan) {
-  return loan.loanDate || loan.borrowDate || loan.loan_date;
-}
+function getLoanTitle(loan) { return loan.book?.title || loan.bookTitle || '-'; }
+function getLoanAuthor(loan) { return loan.book?.author || loan.bookAuthor || ''; }
+function getMemberName(loan) { return loan.member?.name || loan.memberName || loan.user?.name || '-'; }
+function getLoanDate(loan) { return loan.loanDate || loan.borrowDate; }
 
 // ==================== LOAD DATA ====================
 async function loadLoans() {
   document.getElementById('loansContainer').innerHTML =
     '<div class="loading"><div class="spinner"></div>Memuat data...</div>';
   try {
-    let result;
-    if (isAdmin) {
-      // Admin: ambil semua peminjaman dari seluruh anggota
-      result = await LoanService.getAll();
-    } else {
-      // User: hanya peminjaman milik sendiri
-      result = await LoanService.getMyLoans();
-    }
-
+    let result = isAdmin ? await LoanService.getAll() : await LoanService.getMyLoans();
     allLoans = result.data || result.loans || result || [];
-    renderFines();
+    if (!isAdmin) {
+      renderMemberFineAlert();
+      loadMemberFines();
+    }
     renderLoans(allLoans);
   } catch (err) {
     document.getElementById('loansContainer').innerHTML =
@@ -178,53 +280,80 @@ async function loadLoans() {
   }
 }
 
-function renderFines() {
-  // Hanya tampilkan warning denda untuk user biasa (bukan admin)
-  if (isAdmin) {
-    document.getElementById('fineSummary').style.display = 'none';
-    return;
-  }
+// ==================== MEMBER: alert & daftar denda ====================
+function renderMemberFineAlert() {
   const overdueLoans = allLoans.filter(l => getLoanStatus(l) === 'overdue');
-  const totalFine = overdueLoans.reduce((sum, l) => {
-    const fine = l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0);
-    return sum + fine;
-  }, 0);
-
+  const totalEst = overdueLoans.reduce((s, l) => s + (l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0)), 0);
+  const alertEl = document.getElementById('memberFineAlert');
   if (overdueLoans.length > 0) {
-    document.getElementById('fineSummary').style.display = 'block';
-    document.getElementById('fineSummary').innerHTML = `
-      <div style="background:var(--danger-dim); border:1px solid rgba(200,75,75,0.25); border-radius:var(--radius2); padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    alertEl.style.display = 'block';
+    alertEl.innerHTML = `
+      <div style="background:var(--danger-dim);border:1px solid rgba(200,75,75,0.25);border-radius:var(--radius2);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--danger); margin-bottom:6px;">⚠ Peringatan Denda</div>
-          <div style="font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800; color:var(--danger);">Rp ${totalFine.toLocaleString('id-ID')}</div>
-          <div style="font-size:13px; color:var(--text2); margin-top:4px;">Dari ${overdueLoans.length} buku yang terlambat dikembalikan</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;">⚠ Peringatan — Buku Terlambat</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--danger);">Estimasi Rp ${totalEst.toLocaleString('id-ID')}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px;">${overdueLoans.length} buku terlambat · Rp 1.000/hari</div>
         </div>
-        <div style="font-size:13px; color:var(--text2);">Denda: Rp 1.000/hari keterlambatan</div>
+        <a href="#memberFinesSection" class="btn btn-danger btn-sm">Lihat & Bayar Denda ↓</a>
       </div>`;
   } else {
-    document.getElementById('fineSummary').style.display = 'none';
+    alertEl.style.display = 'none';
   }
 }
 
+async function loadMemberFines() {
+  const container = document.getElementById('memberFinesList');
+  try {
+    const result = await FineService.getAll({ status: 'unpaid' });
+    const fines = result.fines || result.data || result || [];
+    if (!fines.length) {
+      container.innerHTML = `
+        <div class="empty" style="padding:32px;">
+          <div class="empty-icon">✅</div>
+          <div class="empty-title">Tidak Ada Denda</div>
+          <div class="empty-text">Semua peminjaman Anda tepat waktu</div>
+        </div>`;
+      return;
+    }
+    container.innerHTML = fines.map(f => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:var(--bg3);gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:2px;">${f.fineCode||'-'}</div>
+          <div style="font-weight:600;color:var(--text);font-size:14px;">
+            ${f.reason==='kerusakan'?'🔧 Kerusakan':f.reason==='kehilangan'?'❌ Kehilangan':'⏱ Keterlambatan'}
+            ${f.lateDays?`<span style="color:var(--text3);font-weight:400;font-size:13px;"> · ${f.lateDays} hari terlambat</span>`:''}
+          </div>
+          ${f.notes?`<div style="font-size:12px;color:var(--text3);margin-top:2px;">${f.notes}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--danger);margin-bottom:6px;">
+            Rp ${(f.amount||0).toLocaleString('id-ID')}
+          </div>
+          <button class="btn btn-primary btn-sm"
+            onclick="openPayFine('${f._id||f.id}',${f.amount||0},'${(f.fineCode||'').replace(/'/g,"\\'")}','${(f.reason||'').replace(/'/g,"\\'")}',${f.lateDays||0})">
+            Bayar Sekarang
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+  }
+}
+
+// ==================== RENDER TABLE ====================
 function renderLoans(loans) {
   const statusFilter = document.getElementById('filterStatus').value;
   const searchQ = document.getElementById('searchLoan').value.toLowerCase();
-
   const filtered = loans.filter(l => {
     const status = getLoanStatus(l);
     const title = getLoanTitle(l).toLowerCase();
-    const matchStatus = !statusFilter || status === statusFilter;
-    const matchSearch = !searchQ || title.includes(searchQ);
-    return matchStatus && matchSearch;
+    return (!statusFilter || status === statusFilter) && (!searchQ || title.includes(searchQ));
   });
 
   if (filtered.length === 0) {
     document.getElementById('loansContainer').innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🔄</div>
-        <div class="empty-title">Tidak Ada Data</div>
-        <div class="empty-text">Belum ada peminjaman yang sesuai filter</div>
-      </div>`;
+      <div class="empty"><div class="empty-icon">🔄</div><div class="empty-title">Tidak Ada Data</div><div class="empty-text">Belum ada peminjaman yang sesuai filter</div></div>`;
     return;
   }
 
@@ -236,7 +365,7 @@ function renderLoans(loans) {
   };
 
   document.getElementById('loansContainer').innerHTML = `
-    <div class="table-wrap" style="border:none; border-radius:0;">
+    <div class="table-wrap" style="border:none;border-radius:0;">
       <table>
         <thead>
           <tr>
@@ -255,7 +384,6 @@ function renderLoans(loans) {
             const status = getLoanStatus(l);
             const fine = l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0);
             const loanId = l._id || l.id;
-            // API fields: loanDate, dueDate, returnDate
             const loanDate = getLoanDate(l);
             return `<tr>
               <td>
@@ -265,15 +393,15 @@ function renderLoans(loans) {
               </td>
               ${isAdmin ? `<td>${getMemberName(l)}</td>` : ''}
               <td>${loanDate ? new Date(loanDate).toLocaleDateString('id-ID') : '-'}</td>
-              <td style="${status === 'overdue' ? 'color:var(--danger)' : ''}">${l.dueDate ? new Date(l.dueDate).toLocaleDateString('id-ID') : '-'}</td>
+              <td style="${status==='overdue'?'color:var(--danger)':''}">${l.dueDate ? new Date(l.dueDate).toLocaleDateString('id-ID') : '-'}</td>
               <td>${l.returnDate ? new Date(l.returnDate).toLocaleDateString('id-ID') : '-'}</td>
               <td>${statusBadge[status] || statusBadge['borrowed']}</td>
-              <td>${fine > 0 ? `<span style="color:var(--danger); font-weight:600">Rp ${fine.toLocaleString('id-ID')}</span>` : '-'}</td>
+              <td>${fine > 0 ? `<span style="color:var(--danger);font-weight:600">Rp ${fine.toLocaleString('id-ID')}</span>` : '-'}</td>
               <td>
                 <div class="actions-cell">
                   <button class="btn btn-outline btn-sm" onclick="openDetail('${loanId}')">Detail</button>
-                  ${status === 'borrowed' || status === 'overdue' 
-                    ? `<button class="btn btn-success btn-sm" onclick="quickReturn('${loanId}')">Kembalikan</button>` 
+                  ${(status==='borrowed'||status==='overdue')
+                    ? `<button class="btn btn-success btn-sm" onclick="openReturnModal('${loanId}')">Kembalikan</button>`
                     : ''}
                 </div>
               </td>
@@ -289,101 +417,262 @@ document.getElementById('searchLoan').addEventListener('input', () => renderLoan
 
 // ==================== DETAIL MODAL ====================
 async function openDetail(id) {
-  document.getElementById('detailContent').innerHTML =
-    '<div class="loading"><div class="spinner"></div>Memuat...</div>';
+  document.getElementById('detailContent').innerHTML = '<div class="loading"><div class="spinner"></div>Memuat...</div>';
   document.getElementById('detailReturnBtn').style.display = 'none';
   document.getElementById('detailModal').classList.add('open');
-
   try {
     const loan = allLoans.find(l => (l._id || l.id) === id);
     if (!loan) throw new Error('Data tidak ditemukan');
-
     const status = getLoanStatus(loan);
     const fine = loan.fineAmount || (loan.lateDays ? loan.lateDays * 1000 : 0);
-    returningId = id;
+    returningId = id; returningLoan = loan;
 
     if (status === 'borrowed' || status === 'overdue') {
       document.getElementById('detailReturnBtn').style.display = 'inline-flex';
     }
 
-    const statusLabel = { borrowed: 'Dipinjam', overdue: 'Terlambat', returned: 'Dikembalikan', lost: 'Hilang' }[status] || status;
-    const statusColor = { borrowed: 'var(--info)', overdue: 'var(--danger)', returned: 'var(--success)', lost: 'var(--text3)' }[status];
+    const statusLabel = {borrowed:'Dipinjam',overdue:'Terlambat',returned:'Dikembalikan',lost:'Hilang'}[status]||status;
+    const statusColor = {borrowed:'var(--info)',overdue:'var(--danger)',returned:'var(--success)',lost:'var(--text3)'}[status];
     const loanDate = getLoanDate(loan);
 
     document.getElementById('detailContent').innerHTML = `
-      <div style="margin-bottom:20px; padding:16px; background:var(--bg3); border-radius:var(--radius); border:1px solid var(--border);">
-        <div style="font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text);">${getLoanTitle(loan)}</div>
-        <div style="font-size:13px; color:var(--text2);">${getLoanAuthor(loan)}</div>
-        ${loan.loanCode ? `<div style="font-size:11px; color:var(--text3); margin-top:4px; letter-spacing:0.08em;">${loan.loanCode}</div>` : ''}
+      <div style="margin-bottom:20px;padding:16px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text);">${getLoanTitle(loan)}</div>
+        <div style="font-size:13px;color:var(--text2);">${getLoanAuthor(loan)}</div>
+        ${loan.loanCode?`<div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:0.08em;">${loan.loanCode}</div>`:''}
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;">
         <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Peminjam</div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Peminjam</div>
           <div style="color:var(--text);">${getMemberName(loan)}</div>
         </div>
         <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Status</div>
-          <div style="color:${statusColor}; font-weight:600;">${statusLabel}</div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Status</div>
+          <div style="color:${statusColor};font-weight:600;">${statusLabel}</div>
         </div>
         <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Tanggal Pinjam</div>
-          <div style="color:var(--text);">${loanDate ? new Date(loanDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Tanggal Pinjam</div>
+          <div style="color:var(--text);">${loanDate?new Date(loanDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'-'}</div>
         </div>
         <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Jatuh Tempo</div>
-          <div style="color:${status === 'overdue' ? 'var(--danger)' : 'var(--text)'};">${loan.dueDate ? new Date(loan.dueDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Jatuh Tempo</div>
+          <div style="color:${status==='overdue'?'var(--danger)':'var(--text)'};">${loan.dueDate?new Date(loan.dueDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'-'}</div>
         </div>
-        ${loan.lateDays > 0 ? `
-        <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Keterlambatan</div>
+        ${loan.lateDays>0?`<div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Keterlambatan</div>
           <div style="color:var(--danger);">${loan.lateDays} hari</div>
-        </div>` : ''}
-        ${loan.returnDate ? `
-        <div>
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Tanggal Kembali</div>
-          <div style="color:var(--text);">${new Date(loan.returnDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'})}</div>
-        </div>` : ''}
-        ${fine > 0 ? `
-        <div style="grid-column:1/-1; background:var(--danger-dim); border:1px solid rgba(200,75,75,0.2); border-radius:var(--radius); padding:14px; margin-top:4px;">
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Total Denda</div>
-          <div style="font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800; color:var(--danger);">Rp ${fine.toLocaleString('id-ID')}</div>
-          <div style="font-size:12px; color:var(--text3); margin-top:4px;">
-            ${loan.finePaid ? '✅ Sudah dibayar' : 'Belum dibayar — Rp 1.000 per hari keterlambatan'}
-          </div>
-        </div>` : ''}
-        ${loan.notes ? `
-        <div style="grid-column:1/-1;">
-          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Catatan</div>
+        </div>`:''}
+        ${loan.returnDate?`<div>
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Tanggal Kembali</div>
+          <div style="color:var(--text);">${new Date(loan.returnDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+        </div>`:''}
+        ${fine>0?`<div style="grid-column:1/-1;background:var(--danger-dim);border:1px solid rgba(200,75,75,0.2);border-radius:var(--radius);padding:14px;margin-top:4px;">
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Total Denda</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:var(--danger);">Rp ${fine.toLocaleString('id-ID')}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;">${loan.finePaid?'✅ Sudah dibayar':'Belum dibayar — Rp 1.000/hari'}</div>
+        </div>`:''}
+        ${loan.notes?`<div style="grid-column:1/-1;">
+          <div style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">Catatan</div>
           <div style="color:var(--text2);">${loan.notes}</div>
-        </div>` : ''}
+        </div>`:''}
       </div>`;
   } catch (err) {
-    document.getElementById('detailContent').innerHTML =
-      `<div class="alert alert-error">${err.message}</div>`;
+    document.getElementById('detailContent').innerHTML = `<div class="alert alert-error">${err.message}</div>`;
   }
 }
 
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 document.getElementById('detailClose').addEventListener('click', closeDetail);
 document.getElementById('detailCloseBtn').addEventListener('click', closeDetail);
+document.getElementById('detailReturnBtn').addEventListener('click', () => { closeDetail(); openReturnModal(returningId); });
 
-document.getElementById('detailReturnBtn').addEventListener('click', () => quickReturn(returningId, true));
+// ==================== MODAL KONFIRMASI PENGEMBALIAN ====================
+function openReturnModal(loanId) {
+  const loan = allLoans.find(l => (l._id || l.id) === loanId);
+  if (!loan) return;
+  returningId = loanId; returningLoan = loan;
 
-async function quickReturn(loanId, fromModal = false) {
-  if (!confirm('Konfirmasi pengembalian buku?')) return;
+  document.getElementById('returnBookTitle').textContent = getLoanTitle(loan);
+  document.getElementById('returnMemberName').textContent = getMemberName(loan);
+
+  const status = getLoanStatus(loan);
+  const fine = loan.fineAmount || (loan.lateDays ? loan.lateDays * 1000 : 0);
+  const fineWarn = document.getElementById('returnFineWarning');
+  if (status === 'overdue' || fine > 0) {
+    fineWarn.style.display = 'block';
+    document.getElementById('returnFineAmount').textContent = `Rp ${fine.toLocaleString('id-ID')}`;
+  } else {
+    fineWarn.style.display = 'none';
+  }
+  document.getElementById('returnModal').classList.add('open');
+}
+
+function closeReturnModal() { document.getElementById('returnModal').classList.remove('open'); }
+document.getElementById('returnClose').addEventListener('click', closeReturnModal);
+document.getElementById('returnCancelBtn').addEventListener('click', closeReturnModal);
+document.getElementById('returnConfirmBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('returnConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Memproses...';
   try {
-    // API: PUT /api/loans/{id}/return
-    await LoanService.returnBook(loanId);
+    await LoanService.returnBook(returningId);
     App.showToast('Buku berhasil dikembalikan!', 'success');
-    if (fromModal) closeDetail();
+    closeReturnModal();
     loadLoans();
   } catch (err) {
     App.showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ Ya, Kembalikan';
+  }
+});
+
+// ==================== BAYAR DENDA — MEMBER ====================
+function openPayFine(fineId, amount, code, reason, lateDays) {
+  payingFineId = fineId;
+  document.getElementById('payFineCode').textContent = code || '-';
+  document.getElementById('payFineAmount').textContent = `Rp ${amount.toLocaleString('id-ID')}`;
+  const reasonLabel = reason === 'kerusakan' ? 'Kerusakan buku'
+    : reason === 'kehilangan' ? 'Kehilangan buku'
+    : `Keterlambatan ${lateDays} hari`;
+  document.getElementById('payFineInfo').textContent = `Alasan: ${reasonLabel}`;
+  document.getElementById('payFineNotes').value = '';
+  document.getElementById('payFineModal').classList.add('open');
+}
+document.getElementById('payFineClose').addEventListener('click', () => document.getElementById('payFineModal').classList.remove('open'));
+document.getElementById('payFineCancelBtn').addEventListener('click', () => document.getElementById('payFineModal').classList.remove('open'));
+document.getElementById('payFineConfirmBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('payFineConfirmBtn');
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  try {
+    await FineService.pay(payingFineId, document.getElementById('payFineMethod').value, document.getElementById('payFineNotes').value);
+    App.showToast('Denda berhasil dibayar! Terima kasih.', 'success');
+    document.getElementById('payFineModal').classList.remove('open');
+    loadLoans();
+  } catch (err) {
+    App.showToast(err.message || 'Gagal membayar denda', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ Konfirmasi Bayar';
+  }
+});
+
+// ==================== MONITOR DENDA — ADMIN ====================
+document.getElementById('btnShowFines').addEventListener('click', () => {
+  document.getElementById('adminFinesModal').classList.add('open');
+  loadAdminFines('unpaid');
+  loadAdminFineStats();
+});
+document.getElementById('adminFinesClose').addEventListener('click', () => {
+  document.getElementById('adminFinesModal').classList.remove('open');
+});
+
+async function loadAdminFineStats() {
+  try {
+    const stats = await FineService.getStats();
+    const unpaidCount = stats?.unpaidCount ?? stats?.unpaid ?? '-';
+    const unpaidAmt = stats?.unpaidAmount ?? stats?.totalUnpaid ?? 0;
+    const paidAmt = stats?.paidAmount ?? stats?.totalPaid ?? 0;
+    document.getElementById('adminFineStats').innerHTML = `
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Belum Dibayar</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:var(--danger);">${unpaidCount}</div>
+        <div style="font-size:12px;color:var(--text3);">transaksi</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Total Tunggakan</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--danger);">Rp ${unpaidAmt.toLocaleString('id-ID')}</div>
+        <div style="font-size:12px;color:var(--text3);">belum masuk</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Sudah Dibayar</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--success);">Rp ${paidAmt.toLocaleString('id-ID')}</div>
+        <div style="font-size:12px;color:var(--text3);">terkumpul</div>
+      </div>`;
+  } catch { /* silent */ }
+}
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  ['unpaid','paid','manual'].forEach(t => {
+    const panel = document.getElementById(`adminFineTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    const btn = document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    if (btn) {
+      btn.className = t === tab ? 'btn btn-sm' : 'btn btn-outline btn-sm';
+      btn.style.background = t === tab ? 'var(--accent)' : '';
+      btn.style.color = t === tab ? 'var(--bg)' : '';
+    }
+  });
+  if (tab === 'unpaid') loadAdminFines('unpaid');
+  if (tab === 'paid') loadAdminFines('paid');
+}
+
+async function loadAdminFines(status) {
+  const cid = status === 'unpaid' ? 'adminFineListUnpaid' : 'adminFineListPaid';
+  document.getElementById(cid).innerHTML = '<div class="loading"><div class="spinner"></div>Memuat...</div>';
+  try {
+    const result = await FineService.getAll({ status });
+    const fines = result.fines || result.data || result || [];
+    if (!fines.length) {
+      document.getElementById(cid).innerHTML = `
+        <div class="empty" style="padding:32px;">
+          <div class="empty-icon">${status==='unpaid'?'✅':'📋'}</div>
+          <div class="empty-title">${status==='unpaid'?'Tidak Ada Tunggakan':'Belum Ada Riwayat'}</div>
+        </div>`;
+      return;
+    }
+    document.getElementById(cid).innerHTML = fines.map(f => `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;background:var(--bg3);gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:2px;">${f.fineCode||'-'}</div>
+          <div style="font-weight:600;color:var(--text);font-size:14px;">
+            ${f.reason==='kerusakan'?'🔧 Kerusakan':f.reason==='kehilangan'?'❌ Kehilangan':'⏱ Keterlambatan'}
+            ${f.lateDays?`<span style="color:var(--text3);font-weight:400;font-size:13px;"> · ${f.lateDays} hari</span>`:''}
+          </div>
+          <div style="font-size:13px;color:var(--text2);margin-top:2px;">Anggota: <strong>${f.member?.name||f.memberName||'-'}</strong></div>
+          ${f.notes?`<div style="font-size:12px;color:var(--text3);">${f.notes}</div>`:''}
+          ${f.paidAt?`<div style="font-size:11px;color:var(--success);margin-top:2px;">✓ Dibayar ${new Date(f.paidAt).toLocaleDateString('id-ID')} via ${f.paymentMethod||'-'}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:${status==='unpaid'?'var(--danger)':'var(--success)'};">
+            Rp ${(f.amount||0).toLocaleString('id-ID')}
+          </div>
+          <div style="font-size:11px;margin-top:4px;${status==='unpaid'?'color:var(--danger)':'color:var(--success)'}">
+            ${status==='unpaid'?'● Belum dibayar':'● Lunas'}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById(cid).innerHTML = `<div class="alert alert-error">${err.message}</div>`;
   }
 }
 
+document.getElementById('btnSubmitManualFine').addEventListener('click', async () => {
+  const loanId = document.getElementById('manualLoanId').value.trim();
+  const amount = parseInt(document.getElementById('manualAmount').value);
+  const reason = document.getElementById('manualReason').value;
+  const notes = document.getElementById('manualNotes').value.trim();
+  if (!loanId || !amount) { App.showToast('Loan ID dan jumlah denda wajib diisi!', 'error'); return; }
+  const btn = document.getElementById('btnSubmitManualFine');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    await FineService.create(loanId, amount, reason, notes);
+    App.showToast('Denda manual berhasil dibuat!', 'success');
+    document.getElementById('manualLoanId').value = '';
+    document.getElementById('manualAmount').value = '';
+    document.getElementById('manualNotes').value = '';
+    switchAdminTab('unpaid');
+    loadAdminFineStats();
+  } catch (err) {
+    App.showToast(err.message || 'Gagal membuat denda', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Buat Denda';
+  }
+});
+
 window.openDetail = openDetail;
-window.quickReturn = quickReturn;
+window.openReturnModal = openReturnModal;
+window.openPayFine = openPayFine;
+window.switchAdminTab = switchAdminTab;
 
 loadLoans();
 </script>
