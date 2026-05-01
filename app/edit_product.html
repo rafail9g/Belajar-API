@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Peminjaman — Bibliotheca</title>
+  <title>Peminjaman — LibraryKuy</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,8 +11,8 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
-    <div class="nav-brand-icon">B</div>
-    <span class="nav-brand-text">BIBLIO<span>THECA</span></span>
+    <div class="nav-brand-icon">L</div>
+    <span class="nav-brand-text">Library<span>Kuy</span></span>
   </a>
   <div class="nav-links" id="navLinks"></div>
   <div class="nav-user">
@@ -32,12 +32,7 @@
       <h1 class="page-title" id="pageTitle">Peminjaman Saya</h1>
       <p class="page-subtitle" id="pageSubtitle">Riwayat dan status peminjaman buku Anda</p>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <div id="tabAdmin" style="display:none; gap:8px; display:none;">
-        <button class="btn btn-outline btn-sm" id="btnTabMy" onclick="switchTab('my')">Peminjaman Saya</button>
-        <button class="btn btn-outline btn-sm" id="btnTabAll" onclick="switchTab('all')">Semua Peminjaman</button>
-      </div>
-    </div>
+    
   </div>
 
   <!-- FINE SUMMARY -->
@@ -47,9 +42,10 @@
   <div class="search-bar" style="margin-bottom:16px;">
     <select id="filterStatus" class="form-control" style="max-width:180px;">
       <option value="">Semua Status</option>
-      <option value="active">Dipinjam</option>
+      <option value="borrowed">Dipinjam</option>
       <option value="overdue">Terlambat</option>
       <option value="returned">Dikembalikan</option>
+      <option value="lost">Hilang</option>
     </select>
     <div class="search-input-wrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -116,30 +112,64 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   App.clearAuth(); App.redirect('login.html');
 });
 
+// Admin: tampil riwayat semua peminjaman. User: peminjaman sendiri.
 if (isAdmin) {
-  document.getElementById('tabAdmin').style.display = 'flex';
+  document.getElementById('pageTitle').textContent = 'Riwayat Peminjaman';
+  document.getElementById('pageSubtitle').textContent = 'Seluruh riwayat peminjaman anggota perpustakaan';
 }
 
 let allLoans = [];
-let currentTab = 'my';
 let returningId = null;
 
+// ==================== HELPERS STATUS API ====================
+// API status: borrowed | returned | overdue | lost
+function getLoanStatus(loan) {
+  // Gunakan status dari API langsung
+  if (loan.status) return loan.status;
+  // Fallback: hitung manual
+  if (loan.returnDate) return 'returned';
+  const due = new Date(loan.dueDate);
+  return due < new Date() ? 'overdue' : 'borrowed';
+}
+
+function getFineAmount(loan) {
+  // API field: fineAmount
+  return loan.fineAmount || loan.fine || 0;
+}
+
+function getLoanTitle(loan) {
+  // API: loan.book bisa berupa string (ID) atau object
+  return loan.book?.title || loan.bookTitle || '-';
+}
+
+function getLoanAuthor(loan) {
+  return loan.book?.author || loan.bookAuthor || '';
+}
+
+function getMemberName(loan) {
+  return loan.member?.name || loan.memberName || loan.user?.name || '-';
+}
+
+// API field: loanDate (bukan borrowDate)
+function getLoanDate(loan) {
+  return loan.loanDate || loan.borrowDate || loan.loan_date;
+}
+
+// ==================== LOAD DATA ====================
 async function loadLoans() {
   document.getElementById('loansContainer').innerHTML =
     '<div class="loading"><div class="spinner"></div>Memuat data...</div>';
   try {
-    let data;
-    if (currentTab === 'all' && isAdmin) {
-      document.getElementById('pageTitle').textContent = 'Semua Peminjaman';
-      document.getElementById('pageSubtitle').textContent = 'Kelola peminjaman seluruh anggota';
-      data = await LoanService.getAll();
+    let result;
+    if (isAdmin) {
+      // Admin: ambil semua peminjaman dari seluruh anggota
+      result = await LoanService.getAll();
     } else {
-      document.getElementById('pageTitle').textContent = 'Peminjaman Saya';
-      document.getElementById('pageSubtitle').textContent = 'Riwayat dan status peminjaman buku Anda';
-      data = await LoanService.getMyLoans();
+      // User: hanya peminjaman milik sendiri
+      result = await LoanService.getMyLoans();
     }
 
-    allLoans = data.data || data.loans || data || [];
+    allLoans = result.data || result.loans || result || [];
     renderFines();
     renderLoans(allLoans);
   } catch (err) {
@@ -148,29 +178,19 @@ async function loadLoans() {
   }
 }
 
-function getLoanStatus(loan) {
-  if (loan.returnDate || loan.status === 'returned') return 'returned';
-  const due = new Date(loan.dueDate || loan.due_date);
-  if (due < new Date()) return 'overdue';
-  return 'active';
-}
-
-function getFine(loan) {
-  if (loan.fine || loan.fineAmount) return loan.fine || loan.fineAmount;
-  const status = getLoanStatus(loan);
-  if (status === 'overdue') {
-    const due = new Date(loan.dueDate || loan.due_date);
-    const days = Math.ceil((new Date() - due) / (1000 * 60 * 60 * 24));
-    return days * 1000;
-  }
-  return 0;
-}
-
 function renderFines() {
+  // Hanya tampilkan warning denda untuk user biasa (bukan admin)
+  if (isAdmin) {
+    document.getElementById('fineSummary').style.display = 'none';
+    return;
+  }
   const overdueLoans = allLoans.filter(l => getLoanStatus(l) === 'overdue');
-  const totalFine = overdueLoans.reduce((sum, l) => sum + getFine(l), 0);
+  const totalFine = overdueLoans.reduce((sum, l) => {
+    const fine = l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0);
+    return sum + fine;
+  }, 0);
 
-  if (overdueLoans.length > 0 && currentTab !== 'all') {
+  if (overdueLoans.length > 0) {
     document.getElementById('fineSummary').style.display = 'block';
     document.getElementById('fineSummary').innerHTML = `
       <div style="background:var(--danger-dim); border:1px solid rgba(200,75,75,0.25); border-radius:var(--radius2); padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
@@ -192,7 +212,7 @@ function renderLoans(loans) {
 
   const filtered = loans.filter(l => {
     const status = getLoanStatus(l);
-    const title = (l.book?.title || l.bookTitle || '').toLowerCase();
+    const title = getLoanTitle(l).toLowerCase();
     const matchStatus = !statusFilter || status === statusFilter;
     const matchSearch = !searchQ || title.includes(searchQ);
     return matchStatus && matchSearch;
@@ -211,7 +231,8 @@ function renderLoans(loans) {
   const statusBadge = {
     returned: '<span class="badge badge-green">Dikembalikan</span>',
     overdue: '<span class="badge badge-red">Terlambat</span>',
-    active: '<span class="badge badge-blue">Dipinjam</span>'
+    borrowed: '<span class="badge badge-blue">Dipinjam</span>',
+    lost: '<span class="badge badge-gray">Hilang</span>'
   };
 
   document.getElementById('loansContainer').innerHTML = `
@@ -220,10 +241,10 @@ function renderLoans(loans) {
         <thead>
           <tr>
             <th>Buku</th>
-            ${currentTab === 'all' ? '<th>Peminjam</th>' : ''}
-            <th>Pinjam</th>
+            ${isAdmin ? '<th>Peminjam</th>' : ''}
+            <th>Tgl Pinjam</th>
             <th>Jatuh Tempo</th>
-            <th>Kembali</th>
+            <th>Tgl Kembali</th>
             <th>Status</th>
             <th>Denda</th>
             <th>Aksi</th>
@@ -232,20 +253,28 @@ function renderLoans(loans) {
         <tbody>
           ${filtered.map(l => {
             const status = getLoanStatus(l);
-            const fine = getFine(l);
+            const fine = l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0);
             const loanId = l._id || l.id;
+            // API fields: loanDate, dueDate, returnDate
+            const loanDate = getLoanDate(l);
             return `<tr>
-              <td><strong>${l.book?.title || l.bookTitle || '-'}</strong><br><small style="color:var(--text3)">${l.book?.author || l.bookAuthor || ''}</small></td>
-              ${currentTab === 'all' ? `<td>${l.user?.name || l.userName || '-'}</td>` : ''}
-              <td>${l.borrowDate ? new Date(l.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
-              <td style="${status === 'overdue' ? 'color:var(--danger)' : ''}">${l.dueDate || l.due_date ? new Date(l.dueDate || l.due_date).toLocaleDateString('id-ID') : '-'}</td>
+              <td>
+                <strong>${getLoanTitle(l)}</strong><br>
+                <small style="color:var(--text3)">${getLoanAuthor(l)}</small>
+                ${l.loanCode ? `<br><small style="color:var(--text3);">${l.loanCode}</small>` : ''}
+              </td>
+              ${isAdmin ? `<td>${getMemberName(l)}</td>` : ''}
+              <td>${loanDate ? new Date(loanDate).toLocaleDateString('id-ID') : '-'}</td>
+              <td style="${status === 'overdue' ? 'color:var(--danger)' : ''}">${l.dueDate ? new Date(l.dueDate).toLocaleDateString('id-ID') : '-'}</td>
               <td>${l.returnDate ? new Date(l.returnDate).toLocaleDateString('id-ID') : '-'}</td>
-              <td>${statusBadge[status]}</td>
+              <td>${statusBadge[status] || statusBadge['borrowed']}</td>
               <td>${fine > 0 ? `<span style="color:var(--danger); font-weight:600">Rp ${fine.toLocaleString('id-ID')}</span>` : '-'}</td>
               <td>
                 <div class="actions-cell">
                   <button class="btn btn-outline btn-sm" onclick="openDetail('${loanId}')">Detail</button>
-                  ${status !== 'returned' ? `<button class="btn btn-success btn-sm" onclick="quickReturn('${loanId}')">Kembalikan</button>` : ''}
+                  ${status === 'borrowed' || status === 'overdue' 
+                    ? `<button class="btn btn-success btn-sm" onclick="quickReturn('${loanId}')">Kembalikan</button>` 
+                    : ''}
                 </div>
               </td>
             </tr>`;
@@ -258,14 +287,7 @@ function renderLoans(loans) {
 document.getElementById('filterStatus').addEventListener('change', () => renderLoans(allLoans));
 document.getElementById('searchLoan').addEventListener('input', () => renderLoans(allLoans));
 
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('btnTabMy').className = `btn btn-sm ${tab === 'my' ? 'btn-primary' : 'btn-outline'}`;
-  document.getElementById('btnTabAll').className = `btn btn-sm ${tab === 'all' ? 'btn-primary' : 'btn-outline'}`;
-  loadLoans();
-}
-
-// Detail modal
+// ==================== DETAIL MODAL ====================
 async function openDetail(id) {
   document.getElementById('detailContent').innerHTML =
     '<div class="loading"><div class="spinner"></div>Memuat...</div>';
@@ -277,25 +299,27 @@ async function openDetail(id) {
     if (!loan) throw new Error('Data tidak ditemukan');
 
     const status = getLoanStatus(loan);
-    const fine = getFine(loan);
+    const fine = loan.fineAmount || (loan.lateDays ? loan.lateDays * 1000 : 0);
     returningId = id;
 
-    if (status !== 'returned') {
+    if (status === 'borrowed' || status === 'overdue') {
       document.getElementById('detailReturnBtn').style.display = 'inline-flex';
     }
 
-    const statusLabel = { active: 'Dipinjam', overdue: 'Terlambat', returned: 'Dikembalikan' }[status];
-    const statusColor = { active: 'var(--info)', overdue: 'var(--danger)', returned: 'var(--success)' }[status];
+    const statusLabel = { borrowed: 'Dipinjam', overdue: 'Terlambat', returned: 'Dikembalikan', lost: 'Hilang' }[status] || status;
+    const statusColor = { borrowed: 'var(--info)', overdue: 'var(--danger)', returned: 'var(--success)', lost: 'var(--text3)' }[status];
+    const loanDate = getLoanDate(loan);
 
     document.getElementById('detailContent').innerHTML = `
       <div style="margin-bottom:20px; padding:16px; background:var(--bg3); border-radius:var(--radius); border:1px solid var(--border);">
-        <div style="font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text);">${loan.book?.title || loan.bookTitle || '-'}</div>
-        <div style="font-size:13px; color:var(--text2);">${loan.book?.author || loan.bookAuthor || ''}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text);">${getLoanTitle(loan)}</div>
+        <div style="font-size:13px; color:var(--text2);">${getLoanAuthor(loan)}</div>
+        ${loan.loanCode ? `<div style="font-size:11px; color:var(--text3); margin-top:4px; letter-spacing:0.08em;">${loan.loanCode}</div>` : ''}
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:14px;">
         <div>
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Peminjam</div>
-          <div style="color:var(--text);">${loan.user?.name || loan.userName || user?.name || '-'}</div>
+          <div style="color:var(--text);">${getMemberName(loan)}</div>
         </div>
         <div>
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Status</div>
@@ -303,12 +327,17 @@ async function openDetail(id) {
         </div>
         <div>
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Tanggal Pinjam</div>
-          <div style="color:var(--text);">${loan.borrowDate ? new Date(loan.borrowDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
+          <div style="color:var(--text);">${loanDate ? new Date(loanDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
         </div>
         <div>
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Jatuh Tempo</div>
-          <div style="color:${status === 'overdue' ? 'var(--danger)' : 'var(--text)'};">${loan.dueDate || loan.due_date ? new Date(loan.dueDate || loan.due_date).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
+          <div style="color:${status === 'overdue' ? 'var(--danger)' : 'var(--text)'};">${loan.dueDate ? new Date(loan.dueDate).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-'}</div>
         </div>
+        ${loan.lateDays > 0 ? `
+        <div>
+          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Keterlambatan</div>
+          <div style="color:var(--danger);">${loan.lateDays} hari</div>
+        </div>` : ''}
         ${loan.returnDate ? `
         <div>
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Tanggal Kembali</div>
@@ -318,7 +347,14 @@ async function openDetail(id) {
         <div style="grid-column:1/-1; background:var(--danger-dim); border:1px solid rgba(200,75,75,0.2); border-radius:var(--radius); padding:14px; margin-top:4px;">
           <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Total Denda</div>
           <div style="font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800; color:var(--danger);">Rp ${fine.toLocaleString('id-ID')}</div>
-          <div style="font-size:12px; color:var(--text3); margin-top:4px;">Denda keterlambatan Rp 1.000 per hari</div>
+          <div style="font-size:12px; color:var(--text3); margin-top:4px;">
+            ${loan.finePaid ? '✅ Sudah dibayar' : 'Belum dibayar — Rp 1.000 per hari keterlambatan'}
+          </div>
+        </div>` : ''}
+        ${loan.notes ? `
+        <div style="grid-column:1/-1;">
+          <div style="color:var(--text3); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px;">Catatan</div>
+          <div style="color:var(--text2);">${loan.notes}</div>
         </div>` : ''}
       </div>`;
   } catch (err) {
@@ -336,6 +372,7 @@ document.getElementById('detailReturnBtn').addEventListener('click', () => quick
 async function quickReturn(loanId, fromModal = false) {
   if (!confirm('Konfirmasi pengembalian buku?')) return;
   try {
+    // API: PUT /api/loans/{id}/return
     await LoanService.returnBook(loanId);
     App.showToast('Buku berhasil dikembalikan!', 'success');
     if (fromModal) closeDetail();
@@ -347,20 +384,6 @@ async function quickReturn(loanId, fromModal = false) {
 
 window.openDetail = openDetail;
 window.quickReturn = quickReturn;
-window.switchTab = switchTab;
-
-// Admin tab init
-if (isAdmin) {
-  document.getElementById('tabAdmin').style.display = 'flex';
-  document.getElementById('btnTabMy').className = 'btn btn-primary btn-sm';
-  document.getElementById('btnTabAll').className = 'btn btn-outline btn-sm';
-
-  // Check URL param
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('tab') === 'admin') {
-    switchTab('all');
-  }
-}
 
 loadLoans();
 </script>

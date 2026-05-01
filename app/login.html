@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login — Bibliotheca</title>
+  <title>Login — LibraryKuy</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="auth-container">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="auth-logo-icon">B</div>
-      <div class="auth-logo-text">BIBLIO<span>THECA</span></div>
+      <div class="auth-logo-icon">L</div>
+      <div class="auth-logo-text">Library<span>Kuy</span></div>
     </div>
     <div class="auth-card">
       <h1 class="auth-title">Masuk</h1>
@@ -37,7 +37,7 @@
     </div>
 
     <p style="text-align:center; font-size:11px; color:var(--text3); margin-top:20px; letter-spacing:0.06em;">
-      © 2024 BIBLIOTHECA — SISTEM PERPUSTAKAAN
+      © 2024 LibraryKuy — SISTEM PERPUSTAKAAN
     </p>
   </div>
 </div>
@@ -54,14 +54,14 @@
   document.getElementById('btnLogin').addEventListener('click', async () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const alert = document.getElementById('alert');
+    const alertEl = document.getElementById('alert');
     const btn = document.getElementById('btnLogin');
 
-    alert.style.display = 'none';
+    alertEl.style.display = 'none';
 
     if (!email || !password) {
-      alert.textContent = 'Email dan password wajib diisi.';
-      alert.style.display = 'flex';
+      alertEl.textContent = 'Email dan password wajib diisi.';
+      alertEl.style.display = 'flex';
       return;
     }
 
@@ -71,20 +71,21 @@
     try {
       const response = await AuthService.login(email, password);
       
-      // ✅ Perbaikan: ambil dari response.data
-      const token = response.data.accessToken;
-      const user = response.data.user;
+      // API response: { success, data: { user, accessToken, refreshToken } }
+      const accessToken = response.data?.accessToken;
+      const refreshToken = response.data?.refreshToken;
+      const user = response.data?.user;
       
-      if (!token) {
+      if (!accessToken) {
         throw new Error('Token tidak ditemukan dalam response server');
       }
       
-      App.setAuth(token, user);
+      App.setAuth(accessToken, user, refreshToken);
       App.redirect('index.html');
       
     } catch (err) {
-      alert.textContent = err.message;
-      alert.style.display = 'flex';
+      alertEl.textContent = err.message;
+      alertEl.style.display = 'flex';
       btn.textContent = 'Masuk';
       btn.disabled = false;
     }

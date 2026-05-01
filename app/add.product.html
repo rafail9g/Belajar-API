@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Katalog Buku — Bibliotheca</title>
+  <title>Katalog Buku — LibraryKuy</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,8 +11,8 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
-    <div class="nav-brand-icon">B</div>
-    <span class="nav-brand-text">BIBLIO<span>THECA</span></span>
+    <div class="nav-brand-icon">L</div>
+    <span class="nav-brand-text">Library<span>Kuy</span></span>
   </a>
   <div class="nav-links" id="navLinks"></div>
   <div class="nav-user">
@@ -48,6 +48,16 @@
     </div>
     <select id="filterCategory" class="form-control" style="max-width:180px;">
       <option value="">Semua Kategori</option>
+      <option value="fiksi">Fiksi</option>
+      <option value="nonfiksi">Nonfiksi</option>
+      <option value="sains">Sains</option>
+      <option value="teknologi">Teknologi</option>
+      <option value="sejarah">Sejarah</option>
+      <option value="biografi">Biografi</option>
+      <option value="agama">Agama</option>
+      <option value="anak">Anak</option>
+      <option value="komik">Komik</option>
+      <option value="lainnya">Lainnya</option>
     </select>
   </div>
 
@@ -78,11 +88,22 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Kategori</label>
-        <input type="text" id="fCategory" class="form-control" placeholder="Kategori" />
+        <select id="fCategory" class="form-control">
+          <option value="lainnya">Lainnya</option>
+          <option value="fiksi">Fiksi</option>
+          <option value="nonfiksi">Nonfiksi</option>
+          <option value="sains">Sains</option>
+          <option value="teknologi">Teknologi</option>
+          <option value="sejarah">Sejarah</option>
+          <option value="biografi">Biografi</option>
+          <option value="agama">Agama</option>
+          <option value="anak">Anak</option>
+          <option value="komik">Komik</option>
+        </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Stok</label>
-        <input type="number" id="fStock" class="form-control" placeholder="Jumlah" min="0" value="1" />
+        <label class="form-label">Jumlah Eksemplar</label>
+        <input type="number" id="fTotalCopies" class="form-control" placeholder="Jumlah" min="0" value="1" />
       </div>
     </div>
     <div class="form-row">
@@ -92,8 +113,22 @@
       </div>
       <div class="form-group">
         <label class="form-label">Tahun Terbit</label>
-        <input type="number" id="fYear" class="form-control" placeholder="Tahun" />
+        <input type="number" id="fPublishYear" class="form-control" placeholder="Tahun" />
       </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Penerbit</label>
+        <input type="text" id="fPublisher" class="form-control" placeholder="Nama penerbit" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jumlah Halaman</label>
+        <input type="number" id="fPages" class="form-control" placeholder="Halaman" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lokasi Rak</label>
+      <input type="text" id="fLocation" class="form-control" placeholder="Contoh: Rak A-01" />
     </div>
     <div class="form-group">
       <label class="form-label">Deskripsi</label>
@@ -101,7 +136,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">URL Cover</label>
-      <input type="text" id="fCover" class="form-control" placeholder="https://placehold.co/400x600" />
+      <input type="text" id="fCoverImage" class="form-control" placeholder="https://..." />
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="modalCancel">Batal</button>
@@ -137,8 +172,12 @@
       <p style="font-size:13px; color:var(--text2);" id="borrowBookAuthor">—</p>
     </div>
     <div style="background:var(--bg3); padding:14px; border-radius:var(--radius);">
-      <p>📅 Masa peminjaman: 7 hari</p>
-      <p>⚠️ Denda: Rp 1.000/hari</p>
+      <p>📅 Masa peminjaman: <strong>14 hari</strong></p>
+      <p>⚠️ Denda keterlambatan: <strong>Rp 1.000/hari</strong></p>
+    </div>
+    <div class="form-group" style="margin-top:16px;">
+      <label class="form-label">Catatan (opsional)</label>
+      <input type="text" id="borrowNotes" class="form-control" placeholder="Catatan untuk petugas..." />
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="borrowCancelBtn">Batal</button>
@@ -163,7 +202,6 @@ if (!App.isLoggedIn()) {
 const user = App.getUser();
 const isAdmin = App.isAdmin();
 
-// Update navbar
 document.getElementById('navName').textContent = user?.name || 'User';
 document.getElementById('navRole').textContent = isAdmin ? 'Admin' : 'Member';
 document.getElementById('navAvatar').textContent = (user?.name || 'U')[0].toUpperCase();
@@ -185,13 +223,11 @@ mobileNav.innerHTML = `<div class="mobile-nav-links">${menuItems.map(m =>
   `<a href="${m.href}" class="mobile-nav-link ${m.active ? 'active' : ''}">${m.icon}<span>${m.label}</span></a>`
 ).join('')}</div>`;
 
-// Logout
 document.getElementById('btnLogout').onclick = () => {
   App.clearAuth();
   App.redirect('login.html');
 };
 
-// Tampilkan tombol tambah buku untuk admin
 if (isAdmin) {
   document.getElementById('adminActions').style.display = 'flex';
 }
@@ -203,37 +239,29 @@ let deletingId = null;
 let borrowingId = null;
 
 const bookIcons = ['📘', '📗', '📕', '📙', '📓', '📔'];
-const randomIcon = (id) => bookIcons[id % bookIcons.length];
+const randomIcon = (idx) => bookIcons[idx % bookIcons.length];
+
+// Ambil stok yang tersedia dari field API
+function getAvailableCopies(book) {
+  // API fields: availableCopies, totalCopies
+  return book.availableCopies ?? book.totalCopies ?? book.stock ?? 0;
+}
 
 // ==================== LOAD BUKU ====================
 async function loadBooks() {
   try {
     const result = await BookService.getAll();
     
-    // Ambil array buku dari response
     let books = [];
     if (Array.isArray(result)) {
       books = result;
-    } else if (result?.data && Array.isArray(result.data)) {
-      books = result.data;
     } else if (result?.books && Array.isArray(result.books)) {
       books = result.books;
+    } else if (result?.data && Array.isArray(result.data)) {
+      books = result.data;
     }
     
     allBooks = books;
-    console.log('✅ Buku dimuat:', allBooks.length);
-    
-    // Isi dropdown kategori
-    const categories = [...new Set(allBooks.map(b => b.category).filter(Boolean))];
-    const catSelect = document.getElementById('filterCategory');
-    catSelect.innerHTML = '<option value="">Semua Kategori</option>';
-    categories.forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      catSelect.appendChild(opt);
-    });
-    
     renderBooks(allBooks);
   } catch (err) {
     console.error('❌ Load buku error:', err);
@@ -261,9 +289,12 @@ function renderBooks(books) {
         const bookId = book._id || book.id;
         const title = (book.title || 'Tanpa Judul').replace(/'/g, "\\'");
         const author = (book.author || '-').replace(/'/g, "\\'");
-        const stock = book.stock ?? book.totalCopies ?? 0;
-        const cover = book.cover || book.coverUrl;
+        // API field: availableCopies (stok yang bisa dipinjam)
+        const available = getAvailableCopies(book);
+        // API field: coverImage
+        const cover = book.coverImage || book.cover || book.coverUrl;
         const category = book.category || '-';
+        const rating = book.rating ? `⭐ ${book.rating}` : '';
         
         return `
           <div class="book-card">
@@ -274,11 +305,13 @@ function renderBooks(books) {
               }
             </div>
             <div class="book-info">
-              <div class="book-title">${book.title}</div>
+              <div class="book-title">${book.title || 'Tanpa Judul'}</div>
               <div class="book-author">${book.author || '-'}</div>
               <div class="book-meta">
-                <span>${category}</span>
-                <span class="${stock > 0 ? 'badge badge-green' : 'badge badge-red'}">Stok: ${stock}</span>
+                <span style="font-size:11px; color:var(--text3);">${category}${rating ? ' · ' + rating : ''}</span>
+                <span class="${available > 0 ? 'badge badge-green' : 'badge badge-red'}">
+                  ${available > 0 ? `Tersedia: ${available}` : 'Habis'}
+                </span>
               </div>
             </div>
             <div class="book-actions">
@@ -286,9 +319,9 @@ function renderBooks(books) {
                 <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(book)})'>Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="openDelete('${bookId}', '${title}')">Hapus</button>
               ` : `
-                <button class="btn btn-primary btn-sm" ${stock < 1 ? 'disabled' : ''} 
+                <button class="btn btn-primary btn-sm" ${available < 1 ? 'disabled' : ''} 
                   onclick="openBorrow('${bookId}', '${title}', '${author}')">
-                  ${stock > 0 ? 'Pinjam' : 'Habis'}
+                  ${available > 0 ? 'Pinjam' : 'Habis'}
                 </button>
               `}
             </div>
@@ -307,7 +340,8 @@ function filterBooks() {
   const filtered = allBooks.filter(book => {
     const matchSearch = !search || 
       (book.title || '').toLowerCase().includes(search) ||
-      (book.author || '').toLowerCase().includes(search);
+      (book.author || '').toLowerCase().includes(search) ||
+      (book.isbn || '').toLowerCase().includes(search);
     const matchCategory = !category || book.category === category;
     return matchSearch && matchCategory;
   });
@@ -324,12 +358,15 @@ function openAdd() {
   document.getElementById('modalTitle').textContent = 'Tambah Buku';
   document.getElementById('fTitle').value = '';
   document.getElementById('fAuthor').value = '';
-  document.getElementById('fCategory').value = '';
-  document.getElementById('fStock').value = '1';
+  document.getElementById('fCategory').value = 'lainnya';
+  document.getElementById('fTotalCopies').value = '1';
   document.getElementById('fIsbn').value = '';
-  document.getElementById('fYear').value = '';
+  document.getElementById('fPublishYear').value = '';
+  document.getElementById('fPublisher').value = '';
+  document.getElementById('fPages').value = '';
+  document.getElementById('fLocation').value = '';
   document.getElementById('fDesc').value = '';
-  document.getElementById('fCover').value = '';
+  document.getElementById('fCoverImage').value = '';
   document.getElementById('bookModal').classList.add('open');
 }
 
@@ -338,12 +375,18 @@ function openEdit(book) {
   document.getElementById('modalTitle').textContent = 'Edit Buku';
   document.getElementById('fTitle').value = book.title || '';
   document.getElementById('fAuthor').value = book.author || '';
-  document.getElementById('fCategory').value = book.category || '';
-  document.getElementById('fStock').value = book.stock ?? 1;
+  document.getElementById('fCategory').value = book.category || 'lainnya';
+  // API field: totalCopies
+  document.getElementById('fTotalCopies').value = book.totalCopies ?? book.stock ?? 1;
   document.getElementById('fIsbn').value = book.isbn || '';
-  document.getElementById('fYear').value = book.publishedYear || '';
+  // API field: publishYear
+  document.getElementById('fPublishYear').value = book.publishYear || book.publishedYear || '';
+  document.getElementById('fPublisher').value = book.publisher || '';
+  document.getElementById('fPages').value = book.pages || '';
+  document.getElementById('fLocation').value = book.location || '';
   document.getElementById('fDesc').value = book.description || '';
-  document.getElementById('fCover').value = book.cover || '';
+  // API field: coverImage
+  document.getElementById('fCoverImage').value = book.coverImage || book.cover || '';
   document.getElementById('bookModal').classList.add('open');
 }
 
@@ -365,15 +408,19 @@ document.getElementById('modalSave').onclick = async () => {
     return;
   }
   
+  // Kirim sesuai field API
   const payload = {
-    title: title,
-    author: author,
-    category: document.getElementById('fCategory').value.trim() || 'Umum',
-    stock: parseInt(document.getElementById('fStock').value) || 1,
+    title,
+    author,
+    category: document.getElementById('fCategory').value || 'lainnya',
+    totalCopies: parseInt(document.getElementById('fTotalCopies').value) || 1,
     isbn: document.getElementById('fIsbn').value.trim(),
-    publishedYear: parseInt(document.getElementById('fYear').value) || null,
+    publishYear: parseInt(document.getElementById('fPublishYear').value) || null,
+    publisher: document.getElementById('fPublisher').value.trim(),
+    pages: parseInt(document.getElementById('fPages').value) || null,
+    location: document.getElementById('fLocation').value.trim(),
     description: document.getElementById('fDesc').value.trim(),
-    cover: document.getElementById('fCover').value.trim() || ''
+    coverImage: document.getElementById('fCoverImage').value.trim()
   };
   
   const btn = document.getElementById('modalSave');
@@ -391,7 +438,6 @@ document.getElementById('modalSave').onclick = async () => {
     closeBookModal();
     await loadBooks();
   } catch (err) {
-    console.error(err);
     App.showToast(err.message || 'Gagal menyimpan buku', 'error');
   } finally {
     btn.disabled = false;
@@ -436,6 +482,7 @@ function openBorrow(id, title, author) {
   borrowingId = id;
   document.getElementById('borrowBookTitle').textContent = title;
   document.getElementById('borrowBookAuthor').textContent = author;
+  document.getElementById('borrowNotes').value = '';
   document.getElementById('borrowModal').classList.add('open');
 }
 
@@ -448,12 +495,14 @@ document.getElementById('borrowCancelBtn').onclick = closeBorrowModal;
 
 document.getElementById('borrowConfirmBtn').onclick = async () => {
   const btn = document.getElementById('borrowConfirmBtn');
+  const notes = document.getElementById('borrowNotes').value.trim();
   btn.disabled = true;
   btn.textContent = 'Memproses...';
   
   try {
-    await LoanService.borrow(borrowingId);
-    App.showToast('Buku berhasil dipinjam!', 'success');
+    // API: POST /api/loans/borrow { bookId, notes }
+    await LoanService.borrow(borrowingId, null, notes);
+    App.showToast('Buku berhasil dipinjam! Jatuh tempo 14 hari.', 'success');
     closeBorrowModal();
     await loadBooks();
   } catch (err) {

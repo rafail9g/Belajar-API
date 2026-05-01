@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — Bibliotheca</title>
+  <title>Dashboard — LibraryKuy</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,8 +11,8 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
-    <div class="nav-brand-icon">B</div>
-    <span class="nav-brand-text">BIBLIO<span>THECA</span></span>
+    <div class="nav-brand-icon">L</div>
+    <span class="nav-brand-text">Library<span>Kuy</span></span>
   </a>
   <div class="nav-links" id="navLinks"></div>
   <div class="nav-user">
@@ -46,7 +46,7 @@
         <span class="accent-line"></span>
         Peminjaman Terbaru
       </span>
-      <a href="edit_product.html" class="btn btn-outline btn-sm" id="loanLink">Lihat Semua</a>
+      <a href="edit_product.html" class="btn btn-outline btn-sm">Lihat Semua</a>
     </div>
     <div id="recentLoans">
       <div class="loading"><div class="spinner"></div>Memuat...</div>
@@ -68,7 +68,6 @@ if (!App.isLoggedIn()) App.redirect('login.html');
 const user = App.getUser();
 const isAdmin = App.isAdmin();
 
-// Nav
 document.getElementById('navName').textContent = user?.name || 'User';
 document.getElementById('navRole').textContent = isAdmin ? 'Administrator' : 'Member';
 document.getElementById('navAvatar').textContent = (user?.name || 'U')[0].toUpperCase();
@@ -82,7 +81,6 @@ const links = [
   { href: 'add.product.html', label: 'Katalog Buku', icon: '📚' },
   { href: 'edit_product.html', label: 'Peminjaman', icon: '🔄' },
 ];
-if (isAdmin) links.push({ href: 'edit_product.html?tab=admin', label: 'Kelola Buku', icon: '⚙️' });
 
 navLinks.innerHTML = links.map(l =>
   `<a href="${l.href}" class="nav-link ${l.active ? 'active' : ''}">${l.label}</a>`
@@ -97,47 +95,112 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   App.redirect('login.html');
 });
 
+// Helper: ambil status dari loan API
+function getLoanStatus(loan) {
+  if (loan.status) return loan.status;
+  if (loan.returnDate) return 'returned';
+  const due = new Date(loan.dueDate);
+  return due < new Date() ? 'overdue' : 'borrowed';
+}
+
+function getLoanTitle(loan) {
+  return loan.book?.title || loan.bookTitle || '-';
+}
+
+function getMemberName(loan) {
+  return loan.member?.name || loan.memberName || loan.user?.name || '-';
+}
+
+// API field: loanDate
+function getLoanDate(loan) {
+  return loan.loanDate || loan.borrowDate;
+}
+
 async function loadDashboard() {
   try {
-    const [books, loans] = await Promise.all([
-      BookService.getAll(),
-      isAdmin ? LoanService.getAll() : LoanService.getMyLoans()
-    ]);
+    let statsData = null;
+    let loanList = [];
 
-    const bookList = books.data || books.books || books || [];
-    const loanList = loans.data || loans.loans || loans || [];
+    if (isAdmin) {
+      // Admin: gunakan endpoint dashboard untuk statistik
+      const [dashResult, loansResult] = await Promise.all([
+        MemberService.getDashboard(),
+        LoanService.getAll()
+      ]);
+      // API dashboard: { totalBooks, totalMembers, totalLoans, activeLoans, overdueLoans, unpaidFineCount, unpaidFineAmount }
+      statsData = dashResult;
+      loanList = loansResult.data || [];
+    } else {
+      // Member: ambil data sendiri
+      const [booksResult, loansResult] = await Promise.all([
+        BookService.getAll(),
+        LoanService.getMyLoans()
+      ]);
+      loanList = loansResult.data || [];
+      const bookList = Array.isArray(booksResult) ? booksResult : (booksResult.books || []);
 
-    // Stats
-    const activeLoans = loanList.filter(l => l.status === 'borrowed' || l.status === 'active' || !l.returnDate);
-    const overdueLoans = loanList.filter(l => {
-      if (l.status === 'returned') return false;
-      const due = new Date(l.dueDate || l.due_date);
-      return due < new Date();
-    });
-    const totalFine = loanList.reduce((sum, l) => sum + (l.fine || l.fineAmount || 0), 0);
+      // Hitung statistik manual untuk member
+      const activeLoans = loanList.filter(l => getLoanStatus(l) === 'borrowed');
+      const overdueLoans = loanList.filter(l => getLoanStatus(l) === 'overdue');
+      const totalFine = loanList.reduce((s, l) => s + (l.fineAmount || 0), 0);
 
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card">
-        <div class="stat-label">Total Buku</div>
-        <div class="stat-value">${bookList.length}</div>
-        <div class="stat-sub">Tersedia di katalog</div>
-      </div>
-      <div class="stat-card info">
-        <div class="stat-label">${isAdmin ? 'Total Peminjaman' : 'Peminjaman Saya'}</div>
-        <div class="stat-value">${loanList.length}</div>
-        <div class="stat-sub">Sepanjang waktu</div>
-      </div>
-      <div class="stat-card success">
-        <div class="stat-label">Sedang Dipinjam</div>
-        <div class="stat-value">${activeLoans.length}</div>
-        <div class="stat-sub">Belum dikembalikan</div>
-      </div>
-      <div class="stat-card danger">
-        <div class="stat-label">Terlambat</div>
-        <div class="stat-value">${overdueLoans.length}</div>
-        <div class="stat-sub">Denda: Rp ${totalFine.toLocaleString('id-ID')}</div>
-      </div>
-    `;
+      statsData = {
+        totalBooks: bookList.length,
+        totalLoans: loanList.length,
+        activeLoans: activeLoans.length,
+        overdueLoans: overdueLoans.length,
+        unpaidFineAmount: totalFine
+      };
+    }
+
+    // Render stats
+    if (isAdmin) {
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Buku</div>
+          <div class="stat-value">${statsData.totalBooks ?? '—'}</div>
+          <div class="stat-sub">Di koleksi perpustakaan</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-label">Total Anggota</div>
+          <div class="stat-value">${statsData.totalMembers ?? '—'}</div>
+          <div class="stat-sub">Terdaftar</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Sedang Dipinjam</div>
+          <div class="stat-value">${statsData.activeLoans ?? '—'}</div>
+          <div class="stat-sub">Belum dikembalikan</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">Terlambat</div>
+          <div class="stat-value">${statsData.overdueLoans ?? '—'}</div>
+          <div class="stat-sub">Denda belum bayar: ${statsData.unpaidFineCount ?? 0} item · Rp ${(statsData.unpaidFineAmount ?? 0).toLocaleString('id-ID')}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Buku</div>
+          <div class="stat-value">${statsData.totalBooks ?? '—'}</div>
+          <div class="stat-sub">Tersedia di katalog</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-label">Total Peminjaman</div>
+          <div class="stat-value">${statsData.totalLoans ?? '—'}</div>
+          <div class="stat-sub">Sepanjang waktu</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Sedang Dipinjam</div>
+          <div class="stat-value">${statsData.activeLoans ?? '—'}</div>
+          <div class="stat-sub">Belum dikembalikan</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">Terlambat</div>
+          <div class="stat-value">${statsData.overdueLoans ?? '—'}</div>
+          <div class="stat-sub">Total denda: Rp ${(statsData.unpaidFineAmount ?? 0).toLocaleString('id-ID')}</div>
+        </div>
+      `;
+    }
 
     // Recent loans table
     const recent = loanList.slice(0, 6);
@@ -151,6 +214,13 @@ async function loadDashboard() {
       return;
     }
 
+    const statusBadge = {
+      returned: '<span class="badge badge-green">Dikembalikan</span>',
+      overdue: '<span class="badge badge-red">Terlambat</span>',
+      borrowed: '<span class="badge badge-blue">Dipinjam</span>',
+      lost: '<span class="badge badge-gray">Hilang</span>'
+    };
+
     document.getElementById('recentLoans').innerHTML = `
       <div class="table-wrap">
         <table>
@@ -158,7 +228,7 @@ async function loadDashboard() {
             <tr>
               <th>Buku</th>
               ${isAdmin ? '<th>Peminjam</th>' : ''}
-              <th>Tanggal Pinjam</th>
+              <th>Tgl Pinjam</th>
               <th>Jatuh Tempo</th>
               <th>Status</th>
               <th>Denda</th>
@@ -166,20 +236,15 @@ async function loadDashboard() {
           </thead>
           <tbody>
             ${recent.map(l => {
-              const isOverdue = !l.returnDate && new Date(l.dueDate || l.due_date) < new Date();
-              const status = l.returnDate ? 'returned' : (isOverdue ? 'overdue' : 'active');
-              const statusBadge = {
-                returned: '<span class="badge badge-green">Dikembalikan</span>',
-                overdue: '<span class="badge badge-red">Terlambat</span>',
-                active: '<span class="badge badge-blue">Dipinjam</span>'
-              }[status];
-              const fine = l.fine || l.fineAmount || 0;
+              const status = getLoanStatus(l);
+              const fine = l.fineAmount || 0;
+              const loanDate = getLoanDate(l);
               return `<tr>
-                <td>${l.book?.title || l.bookTitle || '-'}</td>
-                ${isAdmin ? `<td>${l.user?.name || l.userName || '-'}</td>` : ''}
-                <td>${l.borrowDate ? new Date(l.borrowDate).toLocaleDateString('id-ID') : '-'}</td>
-                <td>${l.dueDate || l.due_date ? new Date(l.dueDate || l.due_date).toLocaleDateString('id-ID') : '-'}</td>
-                <td>${statusBadge}</td>
+                <td>${getLoanTitle(l)}</td>
+                ${isAdmin ? `<td>${getMemberName(l)}</td>` : ''}
+                <td>${loanDate ? new Date(loanDate).toLocaleDateString('id-ID') : '-'}</td>
+                <td>${l.dueDate ? new Date(l.dueDate).toLocaleDateString('id-ID') : '-'}</td>
+                <td>${statusBadge[status] || statusBadge['borrowed']}</td>
                 <td>${fine > 0 ? `<span style="color:var(--danger)">Rp ${fine.toLocaleString('id-ID')}</span>` : '-'}</td>
               </tr>`;
             }).join('')}
