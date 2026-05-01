@@ -5,7 +5,6 @@ const BookService = {
     const res = await fetch(`${App.BASE_URL}/api/books?${query}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil buku');
-    // API returns: { success, data: { books: [], pagination: {} } }
     return data.data?.books || data.data || data;
   },
 
@@ -13,7 +12,6 @@ const BookService = {
     const res = await fetch(`${App.BASE_URL}/api/books/${id}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Buku tidak ditemukan');
-    // API returns: { data: { book: {} } }
     return data.data?.book || data.data || data;
   },
 
@@ -25,7 +23,6 @@ const BookService = {
   },
 
   async create(bookData) {
-    // Map frontend fields → API fields
     const payload = {
       title: bookData.title,
       author: bookData.author,
@@ -91,14 +88,12 @@ const LoanService = {
     if (!res) return { data: [] };
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil data peminjaman');
-    // API returns: { data: { loans: [], pagination: {} } }
     const loans = data.data?.loans || data.data || data || [];
     return { data: Array.isArray(loans) ? loans : [] };
   },
 
   async getMyLoans() {
     try {
-      // Member hanya dapat melihat peminjaman milik sendiri (API sudah filter by token)
       const res = await App.fetch(`${App.BASE_URL}/api/loans?limit=100`);
       if (!res) return { data: [] };
       const data = await res.json();
@@ -189,7 +184,6 @@ const FineService = {
     if (!res) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengambil detail denda');
-    // API returns: { data: { fine: {} } }
     return data.data?.fine || data.data || data;
   },
 

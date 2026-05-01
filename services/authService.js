@@ -7,7 +7,6 @@ const AuthService = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Registrasi gagal');
-    // API returns 201: { success, data: { user, accessToken, refreshToken } }
     return data;
   },
 
@@ -19,7 +18,6 @@ const AuthService = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login gagal');
-    // API returns 200: { success, data: { user, accessToken, refreshToken } }
     return data;
   },
 

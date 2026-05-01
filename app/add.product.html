@@ -8,7 +8,6 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
     <div class="nav-brand-icon">L</div>
@@ -37,7 +36,6 @@
     </div>
   </div>
 
-  <!-- SEARCH -->
   <div class="search-bar">
     <div class="search-input-wrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -61,16 +59,13 @@
     </select>
   </div>
 
-  <!-- BOOKS -->
   <div id="booksContainer">
     <div class="loading"><div class="spinner"></div>Memuat koleksi...</div>
   </div>
 </div>
 
-<!-- MOBILE NAV -->
 <nav class="mobile-nav" id="mobileNav"></nav>
 
-<!-- MODAL TAMBAH/EDIT BUKU -->
 <div class="modal-overlay" id="bookModal">
   <div class="modal">
     <div class="modal-header">
@@ -151,7 +146,6 @@
   </div>
 </div>
 
-<!-- MODAL KONFIRMASI HAPUS -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
@@ -170,7 +164,6 @@
   </div>
 </div>
 
-<!-- MODAL PINJAM -->
 <div class="modal-overlay" id="borrowModal">
   <div class="modal" style="max-width:400px;">
     <div class="modal-header">
@@ -242,7 +235,6 @@ function getAvailableCopies(book) {
   return book.availableCopies ?? book.totalCopies ?? book.stock ?? 0;
 }
 
-// ==================== LOAD BUKU ====================
 async function loadBooks() {
   try {
     const result = await BookService.getAll();
@@ -258,7 +250,6 @@ async function loadBooks() {
   }
 }
 
-// ==================== RENDER BUKU ====================
 function renderBooks(books) {
   const container = document.getElementById('booksContainer');
   if (!books || books.length === 0) {
@@ -311,7 +302,6 @@ function renderBooks(books) {
   `;
 }
 
-// ==================== FILTER ====================
 function filterBooks() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const category = document.getElementById('filterCategory').value;
@@ -328,7 +318,6 @@ function filterBooks() {
 document.getElementById('searchInput').addEventListener('input', filterBooks);
 document.getElementById('filterCategory').addEventListener('change', filterBooks);
 
-// ==================== MODAL TAMBAH/EDIT ====================
 function openAdd() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Tambah Buku';
@@ -364,7 +353,6 @@ document.getElementById('modalClose').onclick = closeBookModal;
 document.getElementById('modalCancel').onclick = closeBookModal;
 document.getElementById('btnAddBook').onclick = openAdd;
 
-// SIMPAN BUKU
 document.getElementById('modalSave').onclick = async () => {
   const title = document.getElementById('fTitle').value.trim();
   const author = document.getElementById('fAuthor').value.trim();
@@ -407,7 +395,6 @@ document.getElementById('modalSave').onclick = async () => {
   }
 };
 
-// ==================== MODAL HAPUS ====================
 function openDelete(id, title) {
   deletingId = id;
   document.getElementById('deleteBookName').textContent = title;
@@ -432,7 +419,6 @@ document.getElementById('deleteConfirmBtn').onclick = async () => {
   }
 };
 
-// ==================== MODAL PINJAM ====================
 function openBorrow(id, title, author) {
   borrowingId = id;
   document.getElementById('borrowBookTitle').textContent = title;

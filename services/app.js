@@ -50,7 +50,6 @@ const App = {
     setTimeout(() => { toast.className = 'toast'; }, 3000);
   },
 
-  // Fetch wrapper — otomatis handle 401 dengan refresh token
   async fetch(url, options = {}) {
     const res = await fetch(url, {
       ...options,
@@ -61,7 +60,6 @@ const App = {
       }
     });
 
-    // Coba refresh token jika 401
     if (res.status === 401) {
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
@@ -76,7 +74,6 @@ const App = {
             const newToken = refreshData.data?.accessToken || refreshData.accessToken;
             if (newToken) {
               localStorage.setItem('token', newToken);
-              // Retry request dengan token baru
               const retryRes = await fetch(url, {
                 ...options,
                 headers: {
@@ -92,7 +89,6 @@ const App = {
           console.warn('Refresh token gagal:', e);
         }
       }
-      // Refresh gagal atau tidak ada → logout
       App.clearAuth();
       if (!window.location.href.includes('login.html')) {
         window.location.href = 'login.html';

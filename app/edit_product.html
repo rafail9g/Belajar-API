@@ -8,7 +8,6 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
     <div class="nav-brand-icon">L</div>
@@ -32,16 +31,13 @@
       <h1 class="page-title" id="pageTitle">Peminjaman Saya</h1>
       <p class="page-subtitle" id="pageSubtitle">Riwayat dan status peminjaman buku Anda</p>
     </div>
-    <!-- Admin: tombol monitor denda -->
     <div id="adminDendaBtn" style="display:none;">
       <button class="btn btn-outline" id="btnShowFines">🧾 Monitor Denda</button>
     </div>
   </div>
 
-  <!-- MEMBER: warning denda aktif -->
   <div id="memberFineAlert" style="display:none;"></div>
 
-  <!-- FILTER -->
   <div class="search-bar" style="margin-bottom:16px;">
     <select id="filterStatus" class="form-control" style="max-width:180px;">
       <option value="">Semua Status</option>
@@ -56,14 +52,12 @@
     </div>
   </div>
 
-  <!-- TABLE -->
   <div class="card" style="padding:0;">
     <div id="loansContainer">
       <div class="loading"><div class="spinner"></div>Memuat data...</div>
     </div>
   </div>
 
-  <!-- MEMBER ONLY: section daftar denda yang harus dibayar -->
   <div id="memberFinesSection" style="display:none; margin-top:28px;">
     <div class="card">
       <div class="card-header">
@@ -77,10 +71,8 @@
   </div>
 </div>
 
-<!-- MOBILE NAV -->
 <nav class="mobile-nav" id="mobileNav"></nav>
 
-<!-- ======================== MODAL DETAIL PEMINJAMAN ======================== -->
 <div class="modal-overlay" id="detailModal">
   <div class="modal">
     <div class="modal-header">
@@ -95,7 +87,6 @@
   </div>
 </div>
 
-<!-- ======================== MODAL KONFIRMASI PENGEMBALIAN ======================== -->
 <div class="modal-overlay" id="returnModal">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
@@ -120,7 +111,6 @@
   </div>
 </div>
 
-<!-- ======================== MODAL BAYAR DENDA (MEMBER) ======================== -->
 <div class="modal-overlay" id="payFineModal">
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
@@ -151,7 +141,6 @@
   </div>
 </div>
 
-<!-- ======================== MODAL MONITOR DENDA (ADMIN) ======================== -->
 <div class="modal-overlay" id="adminFinesModal">
   <div class="modal" style="max-width:680px;">
     <div class="modal-header">
@@ -159,10 +148,8 @@
       <button class="modal-close" id="adminFinesClose">✕</button>
     </div>
 
-    <!-- Stats strip -->
     <div id="adminFineStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;"></div>
 
-    <!-- Tab -->
     <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;">
       <button class="btn btn-sm" id="tabUnpaid" onclick="switchAdminTab('unpaid')" style="background:var(--accent);color:var(--bg);">Belum Dibayar</button>
       <button class="btn btn-outline btn-sm" id="tabPaid" onclick="switchAdminTab('paid')">Sudah Dibayar</button>
@@ -251,7 +238,6 @@ let returningLoan = null;
 let payingFineId = null;
 let currentAdminTab = 'unpaid';
 
-// ==================== HELPERS ====================
 function getLoanStatus(loan) {
   if (loan.status) return loan.status;
   if (loan.returnDate) return 'returned';
@@ -262,7 +248,6 @@ function getLoanAuthor(loan) { return loan.book?.author || loan.bookAuthor || ''
 function getMemberName(loan) { return loan.member?.name || loan.memberName || loan.user?.name || '-'; }
 function getLoanDate(loan) { return loan.loanDate || loan.borrowDate; }
 
-// ==================== LOAD DATA ====================
 async function loadLoans() {
   document.getElementById('loansContainer').innerHTML =
     '<div class="loading"><div class="spinner"></div>Memuat data...</div>';
@@ -280,7 +265,6 @@ async function loadLoans() {
   }
 }
 
-// ==================== MEMBER: alert & daftar denda ====================
 function renderMemberFineAlert() {
   const overdueLoans = allLoans.filter(l => getLoanStatus(l) === 'overdue');
   const totalEst = overdueLoans.reduce((s, l) => s + (l.fineAmount || (l.lateDays ? l.lateDays * 1000 : 0)), 0);
@@ -341,7 +325,6 @@ async function loadMemberFines() {
   }
 }
 
-// ==================== RENDER TABLE ====================
 function renderLoans(loans) {
   const statusFilter = document.getElementById('filterStatus').value;
   const searchQ = document.getElementById('searchLoan').value.toLowerCase();
@@ -415,7 +398,6 @@ function renderLoans(loans) {
 document.getElementById('filterStatus').addEventListener('change', () => renderLoans(allLoans));
 document.getElementById('searchLoan').addEventListener('input', () => renderLoans(allLoans));
 
-// ==================== DETAIL MODAL ====================
 async function openDetail(id) {
   document.getElementById('detailContent').innerHTML = '<div class="loading"><div class="spinner"></div>Memuat...</div>';
   document.getElementById('detailReturnBtn').style.display = 'none';
@@ -486,7 +468,6 @@ document.getElementById('detailClose').addEventListener('click', closeDetail);
 document.getElementById('detailCloseBtn').addEventListener('click', closeDetail);
 document.getElementById('detailReturnBtn').addEventListener('click', () => { closeDetail(); openReturnModal(returningId); });
 
-// ==================== MODAL KONFIRMASI PENGEMBALIAN ====================
 function openReturnModal(loanId) {
   const loan = allLoans.find(l => (l._id || l.id) === loanId);
   if (!loan) return;
@@ -525,7 +506,6 @@ document.getElementById('returnConfirmBtn').addEventListener('click', async () =
   }
 });
 
-// ==================== BAYAR DENDA — MEMBER ====================
 function openPayFine(fineId, amount, code, reason, lateDays) {
   payingFineId = fineId;
   document.getElementById('payFineCode').textContent = code || '-';
@@ -554,7 +534,6 @@ document.getElementById('payFineConfirmBtn').addEventListener('click', async () 
   }
 });
 
-// ==================== MONITOR DENDA — ADMIN ====================
 document.getElementById('btnShowFines').addEventListener('click', () => {
   document.getElementById('adminFinesModal').classList.add('open');
   loadAdminFines('unpaid');
